@@ -19,6 +19,10 @@ public class UserSecurityModel implements DynamoDBTableModel, UserDetails, HasId
     private final String username;
     private final String email;
     private final String passwordHash;
+    private final boolean isAccountNonExpired;
+    private final boolean isAccountNonLocked;
+    private final boolean isCredentialsNonExpired;
+    private final boolean isEnabled;
     private final List<? extends GrantedAuthority> authorities;
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
@@ -46,25 +50,5 @@ public class UserSecurityModel implements DynamoDBTableModel, UserDetails, HasId
     @Override
     public String getUsername() {
         return this.username;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
     }
 }
