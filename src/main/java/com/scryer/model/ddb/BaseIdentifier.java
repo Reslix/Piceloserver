@@ -1,11 +1,7 @@
 package com.scryer.model.ddb;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Builder;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 
-@Getter
-@Setter
-public class BaseIdentifier {
-    private String type;
-    private String src;
+public record BaseIdentifier(String type, String src) {
 }

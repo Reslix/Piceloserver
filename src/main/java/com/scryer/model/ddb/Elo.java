@@ -1,14 +1,8 @@
 package com.scryer.model.ddb;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Builder;
 
 import java.util.List;
 
-@Getter
-@Setter
-public class Elo {
-    private int rating;
-    private long createDate;
-    private List<Comparison> comparisons;
+public record Elo(Float rating, Long createDate, List<Comparison> comparisons) {
 }
