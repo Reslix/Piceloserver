@@ -14,7 +14,7 @@ import java.util.List;
 @Getter
 @Builder
 @DynamoDbImmutable(builder = UserSecurityModel.UserSecurityModelBuilder.class)
-public class UserSecurityModel implements DynamoDBTableModel, UserDetails {
+public class UserSecurityModel implements DynamoDBTableModel, UserDetails, HasId {
     private final Long id;
     private final String username;
     private final String email;

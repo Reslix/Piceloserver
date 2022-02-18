@@ -11,6 +11,9 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.w3c.dom.Attr;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
@@ -30,7 +33,7 @@ public class ReactiveUserDetailsHandler implements ReactiveUserDetailsService {
 
     @Cacheable("userSecurity")
     @Override
-    public Mono<UserDetails> findByUsername(String username) {
+    public Mono<UserDetails> findByUsername(final String username) {
         UserDetails userDetails = this.userSecurityTable.getItem(Key.builder().partitionValue(username).build());
 
         if (userDetails == null && username.contains("@")) {

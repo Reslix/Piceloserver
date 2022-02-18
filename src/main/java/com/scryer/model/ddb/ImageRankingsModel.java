@@ -12,7 +12,7 @@ import java.util.Map;
 @Getter
 @Builder
 @DynamoDbImmutable(builder = ImageRankingsModel.ImageRankingsModelBuilder.class)
-public final class ImageRankingsModel implements DynamoDBTableModel {
+public final class ImageRankingsModel implements DynamoDBTableModel, HasId {
     private final Long id;
     private final Long userId;
     private final String name;

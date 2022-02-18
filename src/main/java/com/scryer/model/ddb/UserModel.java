@@ -11,17 +11,24 @@ import java.util.List;
 @Getter
 @Builder
 @DynamoDbImmutable(builder = UserModel.UserModelBuilder.class)
-public final class UserModel implements DynamoDBTableModel {
+public final class UserModel implements DynamoDBTableModel, HasId {
     private final Long id;
     private final String username;
+    private final String displayName;
     private final String firstName;
     private final String lastName;
     private final String email;
     private final Long lastLogin;
     private final Long createDate;
+    private final Long lastModified;
     private final Long rootFolderId;
     private final Long imageRankingsId;
     private final List<String> tags;
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
+    public Long getId() {
+        return this.id;
+    }
 
     @DynamoDbPartitionKey
     public String getUsername() {

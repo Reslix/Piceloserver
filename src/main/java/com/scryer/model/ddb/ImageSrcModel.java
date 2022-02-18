@@ -12,7 +12,7 @@ import java.util.Map;
 @Getter
 @Builder
 @DynamoDbImmutable(builder = ImageSrcModel.ImageSrcModelBuilder.class)
-public final class ImageSrcModel implements DynamoDBTableModel {
+public final class ImageSrcModel implements DynamoDBTableModel, HasId {
     private final Long id;
     private final Long userId;
     private final BaseIdentifier source;

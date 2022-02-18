@@ -10,7 +10,7 @@ import java.util.List;
 @Getter
 @Builder
 @DynamoDbImmutable(builder = FolderModel.FolderModelBuilder.class)
-public final class FolderModel implements DynamoDBTableModel {
+public final class FolderModel implements DynamoDBTableModel, HasId {
     private final Long id;
     private final Long userId;
     private final BaseIdentifier source;
