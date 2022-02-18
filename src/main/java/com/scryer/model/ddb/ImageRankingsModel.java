@@ -16,8 +16,8 @@ public final class ImageRankingsModel implements DynamoDBTableModel, HasId {
     private final Long id;
     private final Long userId;
     private final String name;
-    private final Long createName;
     private final Long lastModified;
+    private final Long createDate;
     private final List<Long> imageIds;
     private final Map<Long, Elo> eloMap;
 
