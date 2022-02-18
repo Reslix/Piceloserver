@@ -29,7 +29,7 @@ public class JWTCookieFilter implements WebFilter {
                                                                      .toSingleValueMap()
                                                                      .get("resetToken")
                                                                      .getValue());
-        if (JWTTokenUtility.isTokenExpired(accessToken)) {
+        if (JWTTokenUtility.isTokenExpired(accessToken) && !JWTTokenUtility.isTokenExpired(resetToken)) {
             if (!(Boolean) cacheManager.getCache("logout").get(accessToken.getBody().getSubject()).get()) {
                 exchange.getResponse()
                         .addCookie(ResponseCookie.from("accessToken",
