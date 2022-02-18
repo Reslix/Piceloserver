@@ -46,7 +46,6 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
         HttpCookie accessCookie = httpRequest.getCookies().toSingleValueMap().get("accessToken");
         HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
 
-
         if (accessCookie != null) {
             return apiAuthenticationProvider.authenticate(new UsernamePasswordAuthenticationToken(accessCookie.getValue(),
                                                                                                   refreshCookie.getValue()))

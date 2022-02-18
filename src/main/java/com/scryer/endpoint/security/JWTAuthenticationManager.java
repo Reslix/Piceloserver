@@ -19,6 +19,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
@@ -36,7 +37,9 @@ public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
 
             String username = accessToken.getBody().getSubject();
 
-            if(!(Boolean) cacheManager.getCache("logout").get(username).get()) {
+            if (!(Boolean) Optional.ofNullable(cacheManager.getCache("logout").get(username))
+                                   .map(Cache.ValueWrapper::get)
+                                   .orElse(false)) {
                 if (JWTTokenUtility.isTokenExpired(accessToken)) {
                     if (JWTTokenUtility.isTokenExpired(refreshToken)) {
                         return Mono.empty();
@@ -48,11 +51,11 @@ public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
                                                                                         "user")));
                 return Mono.just(result);
             }
-
+            else {
+                return Mono.empty();
+            }
         } catch (MalformedJwtException e) {
             return Mono.just(authentication);
         }
-        return Mono.empty();
     }
-
 }

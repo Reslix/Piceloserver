@@ -34,7 +34,7 @@ public final class JWTTokenUtility {
     }
 
     public static boolean isTokenExpired(final Jws<Claims> token) {
-        return token.getBody().getExpiration().after(Date.from(Instant.now()));
+        return token.getBody().getExpiration().before(Date.from(Instant.now()));
     }
     public static Jws<Claims> validateJwt(final String jwt) {
         return Jwts.parserBuilder().setSigningKey(KEY_PAIR.getPublic())

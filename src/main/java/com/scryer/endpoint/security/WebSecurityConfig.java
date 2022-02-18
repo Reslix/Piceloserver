@@ -27,14 +27,14 @@ public class WebSecurityConfig {
                    .formLogin().disable()
                    .httpBasic(Customizer.withDefaults())
                    .authorizeExchange(exchange -> {
-                       exchange.pathMatchers( "/login","/logout").permitAll()
+                       exchange.pathMatchers("/login", "/logout").permitAll()
                                .pathMatchers(HttpMethod.OPTIONS).permitAll()
                                .anyExchange()
                                .authenticated();
                    })
                    .authenticationManager(authenticationManager)
                    .securityContextRepository(securityContextRepository)
-                   .logout(logoutSpec -> logoutSpec.logoutUrl("/logout"))
+                   .logout().disable()
                    .build();
     }
 }

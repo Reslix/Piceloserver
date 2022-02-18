@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
@@ -31,6 +32,9 @@ public class ScryerIntegrationTests {
     @Autowired
     private WebTestClient webTestClient;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     @MockBean
@@ -49,8 +53,8 @@ public class ScryerIntegrationTests {
                      .accept(MediaType.APPLICATION_JSON)
                      .exchange()
                      .expectStatus()
-                     .isUnauthorized()
-                     .expectBody();
+                     .isUnauthorized();
+
         MultiValueMap<String, ResponseCookie> cookies =
                 webTestClient.post()
                              .uri("/login")
@@ -68,16 +72,29 @@ public class ScryerIntegrationTests {
                      .accept(MediaType.APPLICATION_JSON)
                      .exchange()
                      .expectStatus()
-                     .isOk()
-                     .expectBody().returnResult().getResponseCookies().toString();
+                     .isOk();
 
         webTestClient.get()
                      .uri("/api/hello")
                      .accept(MediaType.APPLICATION_JSON)
                      .exchange()
                      .expectStatus()
-                     .isUnauthorized()
-                     .expectBody();
+                     .isUnauthorized();
 
+        webTestClient.post()
+                     .uri("/logout")
+                     .cookie("accessToken", cookies.toSingleValueMap().get("accessToken").getValue())
+                     .cookie("refreshToken", cookies.toSingleValueMap().get("refreshToken").getValue())
+                     .exchange()
+                     .expectStatus().isOk();
+
+        webTestClient.get()
+                     .uri("/api/hello")
+                     .cookie("accessToken", cookies.toSingleValueMap().get("accessToken").getValue())
+                     .cookie("refreshToken", cookies.toSingleValueMap().get("refreshToken").getValue())
+                     .accept(MediaType.APPLICATION_JSON)
+                     .exchange()
+                     .expectStatus()
+                     .isUnauthorized();
     }
 }
