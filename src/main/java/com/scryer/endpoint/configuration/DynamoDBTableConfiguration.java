@@ -1,7 +1,7 @@
 package com.scryer.endpoint.configuration;
 
 import com.scryer.model.ddb.*;
-import com.scryer.model.ddb.TableInitializer;
+import com.scryer.util.TableInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;

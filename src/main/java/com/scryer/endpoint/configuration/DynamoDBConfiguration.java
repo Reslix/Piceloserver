@@ -20,7 +20,7 @@ public class DynamoDBConfiguration {
 
     @Bean
     private CacheManager cacheManager() {
-        return new ConcurrentMapCacheManager("userSecurity");
+        return new ConcurrentMapCacheManager("logout");
     }
 
     @Bean
