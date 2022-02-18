@@ -1,8 +1,11 @@
 package com.scryer.endpoint.handler;
 
 import com.scryer.util.JWTTokenUtility;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -22,10 +25,16 @@ public class LoginHandler {
     @Autowired
     private CacheManager cacheManager;
 
+    /**
+     * Also some questionable logic for using caches
+     * @param request
+     * @return
+     */
     public Mono<ServerResponse> login(final ServerRequest request) {
         Mono<String> usernameMono = ReactiveSecurityContextHolder.getContext()
                                                                  .map(SecurityContext::getAuthentication)
-                                                                 .map(Principal::getName);
+                                                                 .map(Principal::getName)
+                                                                 .map(String::toLowerCase);
         return usernameMono.flatMap(username -> {
                                         cacheManager.getCache("logout").evictIfPresent(username);
                                         return ServerResponse.ok()
@@ -44,18 +53,25 @@ public class LoginHandler {
 
     /**
      * There is some highly questionable stuff going on here that should probably be replaced by reactive redis.
+     *
      * @param request
      * @return
      */
     public Mono<ServerResponse> logout(final ServerRequest request) {
-        Mono<String> usernameMono = ReactiveSecurityContextHolder.getContext()
-                                                                 .map(SecurityContext::getAuthentication)
-                                                                 .map(Principal::getName);
+        HttpCookie accessCookie = request.cookies().toSingleValueMap().get("accessToken");
+        Jws<Claims> accessToken = JWTTokenUtility.validateJwt(accessCookie.getValue());
+        var usernameMono = Mono.just(accessToken.getBody().getSubject());
         return usernameMono.flatMap(reactiveUserDetailsHandler::findByUsername)
                            .map(userDetails -> {
                                cacheManager.getCache("logout").put(userDetails.getUsername(), true);
                                return userDetails;
-                           }).flatMap(userDetails -> ServerResponse.ok().build());
+                           }).flatMap(userDetails -> ServerResponse.ok().cookie(ResponseCookie.from("accessToken",
+                                                                                                    "")
+                                                                                              .build())
+                                                                   .cookie(ResponseCookie.from("refreshToken",
+                                                                                               "")
+                                                                                         .build())
+                                                                   .build());
 
     }
 }

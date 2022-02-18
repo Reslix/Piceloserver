@@ -29,8 +29,8 @@ public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
-        String accessString = authentication.getPrincipal().toString();
-        String refreshString = authentication.getCredentials().toString();
+        var accessString = authentication.getPrincipal().toString();
+        var refreshString = authentication.getCredentials().toString();
         try {
             Jws<Claims> accessToken = JWTTokenUtility.validateJwt(accessString);
             Jws<Claims> refreshToken = JWTTokenUtility.validateJwt(refreshString);
