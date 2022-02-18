@@ -22,7 +22,7 @@ public final class UserModel implements DynamoDBTableModel, HasId {
     private final Long createDate;
     private final Long lastModified;
     private final Long rootFolderId;
-    private final Long imageRankingsId;
+    private final List<Long> imageRankingsIds;
     private final List<String> tags;
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
