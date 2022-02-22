@@ -1,23 +1,30 @@
 package com.scryer.util;
 
 import com.scryer.model.ddb.DynamoDBTableModel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Resource;
 
 /**
  * Creates tables if they have not already been created
  */
 @Component
-public class TableInitializer {
+public final class TableInitializer {
 
     public static <T extends DynamoDBTableModel> DynamoDbTable<T> getOrCreateTable(final DynamoDbEnhancedClient client,
-                                                                                   final Class<T> tableClass) {
-        return client.table(tableClass.getName(), TableSchema.fromImmutableClass(tableClass));
+                                                                                   final Class<T> tableClass,
+                                                                                   final CreateTableEnhancedRequest request) {
+        DynamoDbTable<T> table = client.table(tableClass.getName(), TableSchema.fromImmutableClass(tableClass));
+        try {
+            table.describeTable();
+        } catch (ResourceNotFoundException e) {
+            table.createTable(request);
+        }
+        return table;
     }
 }
