@@ -13,20 +13,21 @@ import java.util.List;
 
 @Getter
 @Builder
+@ToString
 @DynamoDbImmutable(builder = UserSecurityModel.UserSecurityModelBuilder.class)
 public class UserSecurityModel implements DynamoDBTableModel, UserDetails, HasId {
-    private final Long id;
+    private final String id;
     private final String username;
     private final String email;
-    private final String passwordHash;
-    private final boolean isAccountNonExpired;
-    private final boolean isAccountNonLocked;
-    private final boolean isCredentialsNonExpired;
-    private final boolean isEnabled;
-    private final List<? extends GrantedAuthority> authorities;
+    private final String password;
+    private final boolean accountNonExpired;
+    private final boolean accountNonLocked;
+    private final boolean credentialsNonExpired;
+    private final boolean enabled;
+    private final Collection<? extends GrantedAuthority> authorities;
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
-    public Long getId() {
+    public String getId() {
         return this.id;
     }
 
@@ -43,12 +44,16 @@ public class UserSecurityModel implements DynamoDBTableModel, UserDetails, HasId
 
     @Override
     public String getPassword() {
-        return this.passwordHash;
+        return this.password;
     }
 
     @DynamoDbPartitionKey
     @Override
     public String getUsername() {
         return this.username;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }

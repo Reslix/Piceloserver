@@ -1,27 +1,22 @@
 package com.scryer.endpoint.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.waiters.DynamoDbWaiter;
 
 import java.net.URI;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan
 public class DynamoDBConfiguration {
-
-    @Bean
-    private CacheManager cacheManager() {
-        return new ConcurrentMapCacheManager("logout");
-    }
 
     @Bean
     private Region ddbRegion() {
@@ -35,9 +30,11 @@ public class DynamoDBConfiguration {
 
     @Bean
     public DynamoDbClient dynamoDbClient(final Region ddbRegion, final URI ddbLocalUri) {
+        AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create("fake", "fake");
         return DynamoDbClient.builder()
                 .region(ddbRegion)
                 .endpointOverride(ddbLocalUri)
+                .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
                 .build();
     }
 

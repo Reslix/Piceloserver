@@ -2,6 +2,7 @@ package com.scryer.model.ddb;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
@@ -10,9 +11,10 @@ import java.util.List;
 
 @Getter
 @Builder
+@ToString
 @DynamoDbImmutable(builder = UserModel.UserModelBuilder.class)
-public final class UserModel implements DynamoDBTableModel, HasId {
-    private final Long id;
+public final class UserModel implements DynamoDBTableModel, HasId, HasTags {
+    private final String id;
     private final String username;
     private final String displayName;
     private final String firstName;
@@ -21,12 +23,12 @@ public final class UserModel implements DynamoDBTableModel, HasId {
     private final Long lastLogin;
     private final Long createDate;
     private final Long lastModified;
-    private final Long rootFolderId;
-    private final List<Long> imageRankingsIds;
+    private final String rootFolderId;
+    private final List<String> imageRankingsIds;
     private final List<String> tags;
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
-    public Long getId() {
+    public String getId() {
         return this.id;
     }
 

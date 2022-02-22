@@ -2,30 +2,51 @@ package com.scryer.model.ddb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scryer.model.ddb.BaseIdentifier;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.stereotype.Component;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
 public class AuthoritiesConverter implements AttributeConverter<Collection<? extends GrantedAuthority>> {
-    @Autowired
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     private final TypeReference<Collection<? extends GrantedAuthority>> typeReference = new TypeReference<>() {
     };
 
+    public AuthoritiesConverter() {
+        this.mapper = new ObjectMapper();
+        var simpleModule = new SimpleModule();
+        simpleModule.addSerializer(GrantedAuthority.class, new GrantedAuthoritySerializer());
+    }
+
     @Override
     public AttributeValue transformFrom(Collection<? extends GrantedAuthority> input) {
         try {
-            return AttributeValue.builder().s(mapper.writeValueAsString(input)).build();
+            return AttributeValue.builder()
+                    .s(mapper.writeValueAsString(input.stream()
+                                                         .map(authority -> {
+                                                             try {
+                                                                 return mapper.writeValueAsString(authority);
+                                                             } catch
+                                                             (JsonProcessingException e) {
+                                                                 return "";
+                                                             }
+                                                         })
+                                                         .toArray()))
+                    .build();
         } catch (JsonProcessingException e) {
             return AttributeValue.builder().build();
         }
@@ -34,7 +55,7 @@ public class AuthoritiesConverter implements AttributeConverter<Collection<? ext
     @Override
     public Collection<? extends GrantedAuthority> transformTo(AttributeValue input) {
         try {
-            return mapper.readValue(input.s(), typeReference);
+            return Arrays.stream(mapper.readValue(input.s(), String[].class)).map(SimpleGrantedAuthority::new).toList();
         } catch (JsonProcessingException e) {
             return null;
         }

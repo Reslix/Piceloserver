@@ -12,9 +12,9 @@ import java.util.Map;
 @Getter
 @Builder
 @DynamoDbImmutable(builder = ImageSrcModel.ImageSrcModelBuilder.class)
-public final class ImageSrcModel implements DynamoDBTableModel, HasId {
-    private final Long id;
-    private final Long userId;
+public final class ImageSrcModel implements DynamoDBTableModel, HasId, HasTags {
+    private final String id;
+    private final String userId;
     private final BaseIdentifier source;
     private final String name;
     private final Long createDate;
@@ -23,15 +23,15 @@ public final class ImageSrcModel implements DynamoDBTableModel, HasId {
     private final String size;
     private final Map<String, BaseIdentifier> alternateSizes;
     private final List<String> tags;
-    private final Long parentFolderId;
+    private final String parentFolderId;
 
     @DynamoDbPartitionKey
-    public Long getId() {
+    public String getId() {
         return this.id;
     }
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"folder_index"})
-    public Long getParentFolderId() {
+    public String getParentFolderId() {
         return this.parentFolderId;
     }
 
