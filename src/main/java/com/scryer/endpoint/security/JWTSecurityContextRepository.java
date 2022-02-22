@@ -1,7 +1,16 @@
 package com.scryer.endpoint.security;
 
+import com.scryer.util.JWTTokenUtility;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.server.Cookie;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpCookie;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -19,6 +28,9 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
 
     @Autowired
     private JWTAuthenticationManager apiAuthenticationProvider;
+
+    @Autowired
+    private CacheManager cacheManager;
 
     /**
      * We want to obtain a new security context per request so no need to save.
@@ -42,16 +54,62 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
     @Override
     public Mono<SecurityContext> load(ServerWebExchange exchange) {
         ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication).map(Objects::toString);
-        ServerHttpRequest httpRequest = exchange.getRequest();
-        HttpCookie accessCookie = httpRequest.getCookies().toSingleValueMap().get("accessToken");
-        HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
+        System.out.println("------------------ entered security context --------------------");
+        System.out.println(exchange.getRequest().getQueryParams());
+        System.out.println(exchange.getRequest().getCookies().toSingleValueMap());
+        System.out.println(exchange.getRequest().getHeaders());
+        if (exchange.getRequest().getCookies().containsKey("accessToken") &&
+            exchange.getRequest().getCookies().containsKey("refreshToken")) {
+            ServerHttpRequest httpRequest = exchange.getRequest();
+            try {
+                HttpCookie accessCookie = httpRequest.getCookies().toSingleValueMap().get("accessToken");
+                Jws<Claims> accessToken = JWTTokenUtility.validateJwt(accessCookie.getValue());
+            } catch (ExpiredJwtException | SignatureException e1) {
+                try {
+                HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
+                Jws<Claims> refreshToken = JWTTokenUtility.validateJwt(refreshCookie.getValue());
+                    System.out.println(3);
+                    var newAccessCookie = ResponseCookie.from("accessToken",
+                                                              JWTTokenUtility.createJwtAccess(refreshToken.getBody()
+                                                                                                      .getSubject(),
+                                                                                              refreshToken.getBody()
+                                                                                                      .get(Claims.ID)
+                                                                                                      .toString()))
+                            .domain("localhost")
+                            .httpOnly(true)
+                            .path("/")
+                            .build();
+                    var newRefreshCookie = ResponseCookie.from("refreshToken",
+                                                               JWTTokenUtility.createJwtRefresh(refreshToken.getBody()
+                                                                                                        .getSubject(),
+                                                                                                refreshToken.getBody()
+                                                                                                        .get(Claims.ID)
+                                                                                                        .toString()))
+                            .domain("localhost")
+                            .httpOnly(true)
+                            .path("/")
+                            .build();
+                    exchange.getResponse()
+                            .addCookie(newAccessCookie);
+                    exchange.getResponse()
+                            .addCookie(newRefreshCookie);
 
-        if (accessCookie != null) {
-            return apiAuthenticationProvider.authenticate(new UsernamePasswordAuthenticationToken(accessCookie.getValue(),
-                                                                                                  refreshCookie.getValue()))
-                                            .map(SecurityContextImpl::new);
-        } else {
-            return Mono.empty();
+                } catch (ExpiredJwtException | SignatureException e2) {
+                    return Mono.empty();
+                }
+            }
+            HttpCookie accessCookie = httpRequest.getCookies().toSingleValueMap().get("accessToken");
+            HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
+
+            Jws<Claims> accessToken = JWTTokenUtility.validateJwt(accessCookie.getValue());
+            Jws<Claims> refreshToken = JWTTokenUtility.validateJwt(refreshCookie.getValue());
+            return apiAuthenticationProvider.authenticate(new UsernamePasswordAuthenticationToken(
+                            accessToken.getBody()
+                                    .getSubject(),
+                            refreshToken.getBody()
+                                    .getSubject()))
+                    .map(SecurityContextImpl::new);
         }
+        return Mono.empty();
     }
 }
