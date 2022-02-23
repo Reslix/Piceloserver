@@ -8,6 +8,7 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
@@ -44,6 +45,12 @@ public class ImageSrcService {
                                                           .item(imageSrc)
                                                           .ignoreNulls(true)
                                                           .build()));
+    }
+
+    public Mono<ImageSrcModel> addToImageSrcTable(final ImageSrcModel imageSrc) {
+        return Mono.just(imageSrcTable.putItemWithResponse(PutItemEnhancedRequest.builder(ImageSrcModel.class)
+                                                                   .item(imageSrc)
+                                                                   .build()).attributes());
     }
 
     public Mono<String> getUniqueId() {

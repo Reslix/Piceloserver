@@ -1,13 +1,10 @@
 package com.scryer.endpoint.security;
 
-import com.scryer.util.JWTTokenUtility;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.server.Cookie;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.ResponseCookie;
@@ -31,6 +28,13 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
 
     @Autowired
     private CacheManager cacheManager;
+
+    @Autowired
+    private String cookieDomain;
+
+    @Autowired
+    private JWTManager jwtManager;
+
 
     /**
      * We want to obtain a new security context per request so no need to save.
@@ -63,29 +67,28 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
             ServerHttpRequest httpRequest = exchange.getRequest();
             try {
                 HttpCookie accessCookie = httpRequest.getCookies().toSingleValueMap().get("accessToken");
-                Jws<Claims> accessToken = JWTTokenUtility.validateJwt(accessCookie.getValue());
+                Jws<Claims> accessToken = jwtManager.validateJwt(accessCookie.getValue());
             } catch (ExpiredJwtException | SignatureException e1) {
                 try {
                 HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
-                Jws<Claims> refreshToken = JWTTokenUtility.validateJwt(refreshCookie.getValue());
-                    System.out.println(3);
+                Jws<Claims> refreshToken = jwtManager.validateJwt(refreshCookie.getValue());
                     var newAccessCookie = ResponseCookie.from("accessToken",
-                                                              JWTTokenUtility.createJwtAccess(refreshToken.getBody()
+                                                              jwtManager.createJwtAccess(refreshToken.getBody()
                                                                                                       .getSubject(),
-                                                                                              refreshToken.getBody()
+                                                                                         refreshToken.getBody()
                                                                                                       .get(Claims.ID)
                                                                                                       .toString()))
-                            .domain("localhost")
+                            .domain(cookieDomain)
                             .httpOnly(true)
                             .path("/")
                             .build();
                     var newRefreshCookie = ResponseCookie.from("refreshToken",
-                                                               JWTTokenUtility.createJwtRefresh(refreshToken.getBody()
+                                                               jwtManager.createJwtRefresh(refreshToken.getBody()
                                                                                                         .getSubject(),
-                                                                                                refreshToken.getBody()
+                                                                                           refreshToken.getBody()
                                                                                                         .get(Claims.ID)
                                                                                                         .toString()))
-                            .domain("localhost")
+                            .domain(cookieDomain)
                             .httpOnly(true)
                             .path("/")
                             .build();
@@ -101,8 +104,8 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
             HttpCookie accessCookie = httpRequest.getCookies().toSingleValueMap().get("accessToken");
             HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
 
-            Jws<Claims> accessToken = JWTTokenUtility.validateJwt(accessCookie.getValue());
-            Jws<Claims> refreshToken = JWTTokenUtility.validateJwt(refreshCookie.getValue());
+            Jws<Claims> accessToken = jwtManager.validateJwt(accessCookie.getValue());
+            Jws<Claims> refreshToken = jwtManager.validateJwt(refreshCookie.getValue());
             return apiAuthenticationProvider.authenticate(new UsernamePasswordAuthenticationToken(
                             accessToken.getBody()
                                     .getSubject(),

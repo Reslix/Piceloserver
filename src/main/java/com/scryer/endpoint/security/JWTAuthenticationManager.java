@@ -1,23 +1,14 @@
 package com.scryer.endpoint.security;
 
-import com.scryer.util.JWTTokenUtility;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Optional;
 
 @Component
