@@ -1,6 +1,7 @@
 package com.scryer.endpoint.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
@@ -18,24 +19,37 @@ import java.net.URI;
 @ComponentScan
 public class DynamoDBConfiguration {
 
-    @Bean
-    private Region ddbRegion() {
-        return Region.US_WEST_1;
-    }
+    @Autowired
+    private String awsAccessKeyId;
+
+    @Autowired
+    private String awsSecretAccessKey;
+
+    @Autowired
+    private URI localddb;
+
+    @Autowired
+    private Region region;
 
     @Bean
-    private URI ddbLocalUri() {
-        return URI.create("http://localhost:8000");
-    }
-
-    @Bean
-    public DynamoDbClient dynamoDbClient(final Region ddbRegion, final URI ddbLocalUri) {
-        AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create("fake", "fake");
-        return DynamoDbClient.builder()
-                .region(ddbRegion)
-                .endpointOverride(ddbLocalUri)
-                .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                .build();
+    public DynamoDbClient dynamoDbClient(final Region region,
+                                         final URI localddb,
+                                         final String awsAccessKeyId,
+                                         final String awsSecretAccessKey) {
+        AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
+        if(localddb != null) {
+            return DynamoDbClient.builder()
+                    .region(region)
+                    .endpointOverride(localddb)
+                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
+                    .build();
+        }
+        else {
+            return DynamoDbClient.builder()
+                    .region(region)
+                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
+                    .build();
+        }
     }
 
     @Bean

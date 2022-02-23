@@ -13,13 +13,13 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class ScryerRouterConfiguration {
 
     @Bean
-    public RouterFunction<ServerResponse> imageRoute(final ImageSrcHandler imageSrcHandler) {
+    public RouterFunction<ServerResponse> imageRoute(final ImageHandler imageHandler) {
         var postImagePredicate = RequestPredicates.POST("/api/image")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var getImagesByFolderPredicate = RequestPredicates.GET("/api/image/folder/{folderId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        return RouterFunctions.route(postImagePredicate, imageSrcHandler::postImage)
-                .andRoute(getImagesByFolderPredicate, imageSrcHandler::getImagesByFolder);
+        return RouterFunctions.route(postImagePredicate, imageHandler::postImage)
+                .andRoute(getImagesByFolderPredicate, imageHandler::getImagesByFolder);
     }
 
     @Bean
