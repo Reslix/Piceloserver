@@ -1,6 +1,8 @@
 package com.scryer.endpoint.configuration;
 
 import com.scryer.endpoint.handler.*;
+import com.scryer.endpoint.metrics.RouteMetricsFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -12,14 +14,23 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Configuration
 public class ScryerRouterConfiguration {
 
+    private final RouteMetricsFilter routeMetricsFilter;
+
+    @Autowired
+    public ScryerRouterConfiguration(final RouteMetricsFilter routeMetricsFilter) {
+        this.routeMetricsFilter = routeMetricsFilter;
+    }
+
     @Bean
     public RouterFunction<ServerResponse> imageRoute(final ImageHandler imageHandler) {
         var postImagePredicate = RequestPredicates.POST("/api/image")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var getImagesByFolderPredicate = RequestPredicates.GET("/api/image/folder/{folderId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+
         return RouterFunctions.route(postImagePredicate, imageHandler::postImage)
-                .andRoute(getImagesByFolderPredicate, imageHandler::getImagesByFolder);
+                .andRoute(getImagesByFolderPredicate, imageHandler::getImagesByFolder)
+                .filter(routeMetricsFilter);
     }
 
     @Bean
@@ -34,11 +45,13 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var deleteFolderPredicate = RequestPredicates.DELETE("/api/folder/{folderId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+
         return RouterFunctions.route(getFolderPredicate, folderHandler::getFolderById)
                 .andRoute(getFolderByUserIdPredicate, folderHandler::getFolderMapByUserId)
                 .andRoute(createFolderPredicate, folderHandler::postNewFolder)
                 .andRoute(updateFolderPredicate, folderHandler::putUpdateFolder)
-                .andRoute(deleteFolderPredicate, folderHandler::deleteFolder);
+                .andRoute(deleteFolderPredicate, folderHandler::deleteFolder)
+                .filter(routeMetricsFilter);
     }
 
     @Bean
@@ -64,7 +77,8 @@ public class ScryerRouterConfiguration {
                 .andRoute(updateTagsForFolderPredicate, tagHandler::updateTagsForFolder)
                 .andRoute(updateTagsForImageSrcPredicate, tagHandler::updateTagsForImageSrc)
                 .andRoute(deleteTagsFromFolderPredicate, tagHandler::deleteTagsFromFolder)
-                .andRoute(deleteTagsFromImageSrcPredicate, tagHandler::deleteTagsFromImageSrc);
+                .andRoute(deleteTagsFromImageSrcPredicate, tagHandler::deleteTagsFromImageSrc)
+                .filter(routeMetricsFilter);
     }
 
     @Bean
@@ -77,18 +91,22 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var checkEmailPredicate = RequestPredicates.GET("/auth/user/email/{email}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+
         return RouterFunctions.route(getUserPredicate, userHandler::getUserByUsername)
                 .andRoute(createUserPredicate, userHandler::postNewUser)
                 .andRoute(checkUsernamePredicate, userHandler::getCheckUsername)
-                .andRoute(checkEmailPredicate, userHandler::getCheckEmail);
+                .andRoute(checkEmailPredicate, userHandler::getCheckEmail)
+                .filter(routeMetricsFilter);
     }
 
     @Bean
-    public RouterFunction<ServerResponse> authRoute(final LoginHandler loginHandler) {
+    public RouterFunction<ServerResponse> loginRoute(final LoginHandler loginHandler) {
         var loginPredicate = RequestPredicates.POST("/auth/login");
         var logoutPredicate = RequestPredicates.POST("/auth/logout");
+
         return RouterFunctions.route(loginPredicate, loginHandler::login)
-                .andRoute(logoutPredicate, loginHandler::logout);
+                .andRoute(logoutPredicate, loginHandler::logout)
+                .filter(routeMetricsFilter);
     }
 
 }

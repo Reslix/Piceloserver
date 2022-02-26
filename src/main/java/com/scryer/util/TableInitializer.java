@@ -19,7 +19,7 @@ public final class TableInitializer {
     public static <T extends DynamoDBTableModel> DynamoDbTable<T> getOrCreateTable(final DynamoDbEnhancedClient client,
                                                                                    final Class<T> tableClass,
                                                                                    final CreateTableEnhancedRequest request) {
-        DynamoDbTable<T> table = client.table(tableClass.getName(), TableSchema.fromImmutableClass(tableClass));
+        DynamoDbTable<T> table = client.table(tableClass.getSimpleName(), TableSchema.fromImmutableClass(tableClass));
         try {
             table.describeTable();
         } catch (ResourceNotFoundException e) {
