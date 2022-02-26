@@ -1,6 +1,11 @@
 package com.scryer.endpoint.configuration;
 
-import com.scryer.model.ddb.*;
+import com.scryer.model.ddb.FolderModel;
+import com.scryer.model.ddb.ImageRankingsModel;
+import com.scryer.model.ddb.ImageSrcModel;
+import com.scryer.model.ddb.TagModel;
+import com.scryer.model.ddb.UserModel;
+import com.scryer.model.ddb.UserSecurityModel;
 import com.scryer.util.TableInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,7 +13,6 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedGlobalSecondaryIndex;
-import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedLocalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.Projection;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 

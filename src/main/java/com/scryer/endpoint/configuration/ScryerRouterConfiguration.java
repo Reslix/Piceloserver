@@ -1,6 +1,10 @@
 package com.scryer.endpoint.configuration;
 
-import com.scryer.endpoint.handler.*;
+import com.scryer.endpoint.handler.FolderHandler;
+import com.scryer.endpoint.handler.ImageHandler;
+import com.scryer.endpoint.handler.LoginHandler;
+import com.scryer.endpoint.handler.TagHandler;
+import com.scryer.endpoint.handler.UserHandler;
 import com.scryer.endpoint.metrics.RouteMetricsFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
