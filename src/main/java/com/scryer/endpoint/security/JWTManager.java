@@ -2,36 +2,16 @@ package com.scryer.endpoint.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1TaggedObject;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.AttCertIssuer;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.selector.X509CertificateHolderSelector;
-import org.bouncycastle.crypto.util.AlgorithmIdentifierFactory;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi;
-import org.bouncycastle.jcajce.provider.asymmetric.x509.CertificateFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
-import javax.crypto.SecretKey;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.file.Paths;
 import java.security.*;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.Temporal;
 import java.util.Date;
 
 @Component

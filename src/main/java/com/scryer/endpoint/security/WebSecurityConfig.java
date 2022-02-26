@@ -3,35 +3,19 @@ package com.scryer.endpoint.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.ReactiveAuthenticationManagerAdapter;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
-import org.springframework.security.web.authentication.DelegatingAuthenticationFailureHandler;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.*;
-import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -78,18 +62,6 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public ServerWebExchangeMatcher serverWebExchangeMatcher() {
-        return exchange -> {
-            Mono<ServerHttpRequest> request = Mono.just(exchange).map(ServerWebExchange::getRequest);
-            System.out.println(exchange.getRequest().getHeaders());
-            return request.map(ServerHttpRequest::getHeaders)
-                    .filter(h -> h.containsKey(HttpHeaders.AUTHORIZATION))
-                    .flatMap($ -> ServerWebExchangeMatcher.MatchResult.match())
-                    .switchIfEmpty(ServerWebExchangeMatcher.MatchResult.notMatch());
-        };
-    }
-
-    @Bean
     public SecurityWebFilterChain securityWebFilterChainAuth(final ServerHttpSecurity http,
                                                              final CorsConfigurationSource source,
                                                              final AuthenticationWebFilter authenticationWebFilter,
@@ -99,7 +71,10 @@ public class WebSecurityConfig {
                 .cors().configurationSource(source).and()
                 .csrf().disable()
                 .formLogin().disable()
-                .httpBasic(Customizer.withDefaults())
+                .httpBasic()
+                .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+                    serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                })).and()
                 .authenticationManager(authenticationManager)
                 .exceptionHandling(exceptionHandlingSpec -> {
                     exceptionHandlingSpec
