@@ -20,6 +20,7 @@ public final class TagModel implements DynamoDBTableModel, HasId {
     private final String name;
     private final List<String> imageIds;
     private final List<String> folderIds;
+    private final List<String> imageRankingIds;
 
     @DynamoDbPartitionKey
     public String getId() {

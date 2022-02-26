@@ -19,6 +19,7 @@ public final class ImageRankingsModel implements DynamoDBTableModel, HasId {
     private final Long createDate;
     private final List<String> imageIds;
     private final Map<String, Elo> eloMap;
+    private final List<String> tags;
 
     @DynamoDbPartitionKey
     public String getId() {

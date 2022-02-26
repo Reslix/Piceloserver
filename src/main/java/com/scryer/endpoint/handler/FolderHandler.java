@@ -1,8 +1,8 @@
 package com.scryer.endpoint.handler;
 
+import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.FolderService;
 import com.scryer.model.ddb.FolderModel;
-import com.scryer.util.JWTTokenUtility;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -13,9 +13,12 @@ import reactor.core.publisher.Mono;
 @Service
 public class FolderHandler {
     private final FolderService folderService;
+    private final JWTManager jwtManager;
 
-    public FolderHandler(final FolderService folderService) {
+    public FolderHandler(final FolderService folderService,
+                         final JWTManager jwtManager) {
         this.folderService = folderService;
+        this.jwtManager = jwtManager;
     }
 
     public Mono<ServerResponse> getFolderById(final ServerRequest request) {
@@ -35,7 +38,7 @@ public class FolderHandler {
 
     public Mono<ServerResponse> postNewFolder(final ServerRequest request) {
         return request.bodyToMono(FolderService.NewFolderRequest.class)
-                .filter(folder -> JWTTokenUtility.getUserIdentity(request).id().equals(folder.userId()))
+                .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.userId()))
                 .flatMap(folderService::createFolderInTable)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -50,7 +53,7 @@ public class FolderHandler {
     public Mono<ServerResponse> putUpdateFolder(final ServerRequest request) {
         return request.bodyToMono(FolderModel.class)
                 .filter(folder -> Long.valueOf(request.pathVariable("folderId")).equals(folder.getId()))
-                .filter(folder -> JWTTokenUtility.getUserIdentity(request).id().equals(folder.getUserId()))
+                .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.getUserId()))
                 .flatMap(folderService::updateFolderTable)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,7 +68,7 @@ public class FolderHandler {
     public Mono<ServerResponse> deleteFolder(final ServerRequest request) {
         return request.bodyToMono(FolderModel.class)
                 .filter(folder -> Long.valueOf(request.pathVariable("folderId")).equals(folder.getId()))
-                .filter(folder -> JWTTokenUtility.getUserIdentity(request).id().equals(folder.getUserId()))
+                .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.getUserId()))
                 .flatMap(folderService::deleteFolderFromTable)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)

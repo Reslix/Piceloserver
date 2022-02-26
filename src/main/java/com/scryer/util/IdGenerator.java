@@ -28,6 +28,7 @@ public final class IdGenerator {
                         QueryConditional.keyEqualTo(Key.builder().partitionValue(candidate).build());
                 var queryEnhancedRequest = QueryEnhancedRequest.builder()
                         .queryConditional(queryConditional)
+                        .consistentRead(true)
                         .build();
                 found = !table.query(queryEnhancedRequest).items().stream().toList().isEmpty();
             }

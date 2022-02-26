@@ -1,27 +1,20 @@
 package com.scryer.endpoint.handler;
 
+import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.ReactiveUserDetailsService;
 import com.scryer.model.ddb.UserSecurityModel;
-import com.scryer.util.JWTTokenUtility;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.server.Cookie;
 import org.springframework.cache.CacheManager;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
 
 import java.security.Principal;
 
@@ -29,13 +22,19 @@ import java.security.Principal;
 public class LoginHandler {
 
     private final ReactiveUserDetailsService reactiveUserDetailsService;
+    private final JWTManager jwtManager;
     private final CacheManager cacheManager;
+    private final String cookieDomain;
 
     @Autowired
     public LoginHandler(final ReactiveUserDetailsService reactiveUserDetailsService,
-                        final CacheManager cacheManager) {
+                        final JWTManager jwtManager,
+                        final CacheManager cacheManager,
+                        final String cookieDomain) {
         this.reactiveUserDetailsService = reactiveUserDetailsService;
+        this.jwtManager = jwtManager;
         this.cacheManager = cacheManager;
+        this.cookieDomain = cookieDomain;
     }
 
     /**
@@ -62,16 +61,16 @@ public class LoginHandler {
                 .then(userMono)
                 .flatMap(user -> ServerResponse.ok()
                         .cookie(ResponseCookie.from("accessToken",
-                                                    JWTTokenUtility.createJwtAccess(user.getUsername(),
-                                                                                    user.getId()))
-                                        .domain("localhost")
+                                                    jwtManager.createJwtAccess(user.getUsername(),
+                                                                               user.getId()))
+                                        .domain(cookieDomain)
                                         .httpOnly(true)
                                         .path("/")
                                         .sameSite(Cookie.SameSite.LAX.attributeValue()).build())
                         .cookie(ResponseCookie.from("refreshToken",
-                                                    JWTTokenUtility.createJwtRefresh(user.getUsername(),
-                                                                                     user.getId()))
-                                        .domain("localhost")
+                                                    jwtManager.createJwtRefresh(user.getUsername(),
+                                                                                user.getId()))
+                                        .domain(cookieDomain)
                                         .httpOnly(true)
                                         .path("/")
                                         .sameSite(Cookie.SameSite.LAX.attributeValue()).build())
@@ -87,14 +86,14 @@ public class LoginHandler {
      * @return
      */
     public Mono<ServerResponse> logout(final ServerRequest request) {
-        var usernameMono = Mono.justOrEmpty(JWTTokenUtility.getUserIdentity(request))
-                .map(JWTTokenUtility.UserId::username);
+        System.out.println("1");
+        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(request))
+                .map(JWTManager.UserId::username);
         return usernameMono.flatMap(reactiveUserDetailsService::findByUsername)
                 .map(userDetails -> {
                     cacheManager.getCache("logout").put(userDetails.getUsername(), true);
                     return userDetails;
                 }).flatMap(userDetails -> ServerResponse.ok().cookie(ResponseCookie.from("accessToken", "").build())
                         .cookie(ResponseCookie.from("refreshToken", "").build()).build());
-
     }
 }

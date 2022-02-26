@@ -11,8 +11,6 @@ import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 
 import java.util.List;
 
@@ -80,17 +78,24 @@ public class UserService {
                 .rootFolderId(folderId)
                 .tags(List.of())
                 .build();
-        var enhancedRequest = PutItemEnhancedRequest.builder(UserModel.class)
+        var enhancedRequest = UpdateItemEnhancedRequest.builder(UserModel.class)
                 .item(userModel)
                 .build();
-        return Mono.fromCallable(() -> {
-            userTable.putItemWithResponse(enhancedRequest);
-            return userTable.getItem(Key.builder().partitionValue(request.username).build());
-        });
+        return Mono.justOrEmpty(userTable.updateItemWithResponse(enhancedRequest).attributes());
     }
 
-    public Mono<String> getUniqueId() {
-        return Mono.just(IdGenerator.uniqueIdForIndex(userTable.index("userId_index"), false));
+    public Mono<UserModel> getUniqueId(final String username, final String email) {
+        var userModel = UserModel.builder()
+                .id(IdGenerator.uniqueIdForIndex(userTable.index("userId_index"), false))
+                .username(username)
+                .email(email)
+                .build();
+
+        return Mono.justOrEmpty(userTable.putItemWithResponse(PutItemEnhancedRequest
+                                                                      .builder(UserModel.class)
+                                                                      .item(userModel)
+                                                                      .build()))
+                .then(Mono.justOrEmpty(userTable.getItem(Key.builder().partitionValue(username).build())));
     }
 
     public record NewUserRequest(String username,

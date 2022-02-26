@@ -12,7 +12,6 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 
 import java.util.HashSet;
 import java.util.List;
@@ -96,7 +95,7 @@ public class TagService {
     }
 
     public Mono<TagModel> deleteTagFromTable(final TagModel tag) {
-        return Mono.just(tagTable.deleteItem(tag));
+        return Mono.justOrEmpty(tagTable.deleteItem(tag));
     }
 
     public Mono<TagModel> deleteFolderTagFromTable(final TagModel tag, final String folderId) {
