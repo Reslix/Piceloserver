@@ -23,6 +23,7 @@ public final class ImageSrcModel implements DynamoDBTableModel, HasId, HasTags {
     private final String size;
     private final Map<String, BaseIdentifier> alternateSizes;
     private final List<String> tags;
+    private final List<String> imageRankings;
     private final String parentFolderId;
 
     @DynamoDbPartitionKey

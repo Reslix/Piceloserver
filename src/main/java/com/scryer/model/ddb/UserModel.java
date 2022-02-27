@@ -24,7 +24,6 @@ public final class UserModel implements DynamoDBTableModel, HasId, HasTags {
     private final Long createDate;
     private final Long lastModified;
     private final String rootFolderId;
-    private final List<String> imageRankingsIds;
     private final List<String> tags;
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
