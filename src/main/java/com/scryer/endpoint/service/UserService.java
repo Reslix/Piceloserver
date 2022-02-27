@@ -74,7 +74,6 @@ public class UserService {
                 .id(id)
                 .createDate(currentTime)
                 .lastModified(currentTime)
-                .imageRankingsIds(List.of())
                 .rootFolderId(folderId)
                 .tags(List.of())
                 .build();

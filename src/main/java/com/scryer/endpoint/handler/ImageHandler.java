@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -149,6 +150,7 @@ public class ImageHandler {
                                  .lastModified(currentTime)
                                  .parentFolderId(folderId)
                                  .alternateSizes(Map.of(alternateSize, new BaseIdentifier("url", alternateSource)))
+                                 .imageRankings(List.of())
                                  .build());
 
     }
