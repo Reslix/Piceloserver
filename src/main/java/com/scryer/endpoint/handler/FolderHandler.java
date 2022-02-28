@@ -25,13 +25,13 @@ public class FolderHandler {
         String folderId = request.pathVariable("folderId");
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromPublisher(folderService.getFolderByIdFromTable(folderId), FolderModel.class));
+                .body(BodyInserters.fromPublisher(folderService.getFolderById(folderId), FolderModel.class));
     }
 
     public Mono<ServerResponse> getFolderMapByUserId(final ServerRequest request) {
         String userId = request.pathVariable("userId");
         System.out.println("user1:" + userId);
-        return folderService.getFoldersMapByUserIdFromTable(userId).flatMap(folderMap -> ServerResponse.ok()
+        return folderService.getFoldersMapByUserId(userId).flatMap(folderMap -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(folderMap)));
     }
@@ -39,7 +39,7 @@ public class FolderHandler {
     public Mono<ServerResponse> postNewFolder(final ServerRequest request) {
         return request.bodyToMono(FolderService.NewFolderRequest.class)
                 .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.userId()))
-                .flatMap(folderService::createFolderInTable)
+                .flatMap(folderService::createFolder)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))
@@ -54,7 +54,7 @@ public class FolderHandler {
         return request.bodyToMono(FolderModel.class)
                 .filter(folder -> Long.valueOf(request.pathVariable("folderId")).equals(folder.getId()))
                 .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.getUserId()))
-                .flatMap(folderService::updateFolderTable)
+                .flatMap(folderService::updateFolder)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))
@@ -69,7 +69,7 @@ public class FolderHandler {
         return request.bodyToMono(FolderModel.class)
                 .filter(folder -> Long.valueOf(request.pathVariable("folderId")).equals(folder.getId()))
                 .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.getUserId()))
-                .flatMap(folderService::deleteFolderFromTable)
+                .flatMap(folderService::deleteFolder)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))

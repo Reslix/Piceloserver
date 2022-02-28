@@ -26,27 +26,21 @@ public class FolderService {
         this.folderTable = folderTable;
     }
 
-    /**
-     * @param userId
-     * @return
-     */
-    public Mono<FolderModel> createRootFolderInTable(final String userId) {
-        return getFoldersByUserIdFromTable(userId).filter(folder -> folder.getParentFolderIds().isEmpty())
+
+    public Mono<FolderModel> createRootFolder(final String userId) {
+        return getFoldersByUserId(userId).filter(folder -> folder.getParentFolderIds().isEmpty())
                 .next()
                 .map(item -> {
                     Mono.error(new IllegalArgumentException("User already has folders"));
                     return item;
                 })
-                .switchIfEmpty(createFolderInTable(new NewFolderRequest("Gallery", userId, List.of()))
+                .switchIfEmpty(createFolder(new NewFolderRequest("Gallery", userId, List.of()))
                                        .switchIfEmpty(Mono.error(new IllegalArgumentException(
                                                "Failed to create new folder"))));
     }
 
-    /**
-     * @param request
-     * @return
-     */
-    public Mono<FolderModel> createFolderInTable(final NewFolderRequest request) {
+
+    public Mono<FolderModel> createFolder(final NewFolderRequest request) {
         String validId = IdGenerator.uniqueIdForTable(folderTable, true);
         Long currentTime = System.currentTimeMillis();
         var newFolder = FolderModel.builder()
@@ -67,19 +61,13 @@ public class FolderService {
         });
     }
 
-    /**
-     * @param userId
-     * @return
-     */
-    public Mono<Map<String, FolderModel>> getFoldersMapByUserIdFromTable(final String userId) {
-        return getFoldersByUserIdFromTable(userId).collectMap(FolderModel::getId, folder -> folder);
+
+    public Mono<Map<String, FolderModel>> getFoldersMapByUserId(final String userId) {
+        return getFoldersByUserId(userId).collectMap(FolderModel::getId, folder -> folder);
     }
 
-    /**
-     * @param userId
-     * @return
-     */
-    public Flux<FolderModel> getFoldersByUserIdFromTable(final String userId) {
+
+    public Flux<FolderModel> getFoldersByUserId(final String userId) {
         var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(userId).build());
         var queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
@@ -93,30 +81,21 @@ public class FolderService {
                 .map(this.folderTable::getItem).sequential();
     }
 
-    /**
-     * @param folderId
-     * @return
-     */
-    public Mono<FolderModel> getFolderByIdFromTable(final String folderId) {
+
+    public Mono<FolderModel> getFolderById(final String folderId) {
         return Mono.justOrEmpty(folderTable.getItem(Key.builder().partitionValue(folderId).build()));
     }
 
-    /**
-     * @param folder
-     * @return
-     */
-    public Mono<FolderModel> updateFolderTable(final FolderModel folder) {
+
+    public Mono<FolderModel> updateFolder(final FolderModel folder) {
         return Mono.just(folderTable.updateItem(UpdateItemEnhancedRequest.builder(FolderModel.class)
                                                         .item(folder)
                                                         .ignoreNulls(true)
                                                         .build()));
     }
 
-    /**
-     * @param folder
-     * @return
-     */
-    public Mono<FolderModel> deleteFolderFromTable(final FolderModel folder) {
+
+    public Mono<FolderModel> deleteFolder(final FolderModel folder) {
         return Mono.just(folderTable.deleteItem(folder));
     }
 

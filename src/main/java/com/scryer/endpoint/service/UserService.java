@@ -24,7 +24,7 @@ public class UserService {
         this.userTable = userTable;
     }
 
-    public Mono<UserModel> getUserByIdFromTable(final String id) {
+    public Mono<UserModel> getUserById(final String id) {
         var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(id).build());
         var queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
@@ -37,11 +37,11 @@ public class UserService {
 
     }
 
-    public Mono<UserModel> getUserByUsernameFromTable(final String username) {
+    public Mono<UserModel> getUserByUsername(final String username) {
         return Mono.fromCallable(() -> userTable.getItem(Key.builder().partitionValue(username).build()));
     }
 
-    public Mono<UserModel> getUserByEmailFromTable(final String email) {
+    public Mono<UserModel> getUserByEmail(final String email) {
         var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(email).build());
         var queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
@@ -54,16 +54,16 @@ public class UserService {
 
     }
 
-    public Mono<UserModel> updateUserTable(final UserModel user) {
+    public Mono<UserModel> updateUser(final UserModel user) {
         return Mono.just(userTable.updateItem(UpdateItemEnhancedRequest.builder(UserModel.class)
                                                       .item(user)
                                                       .ignoreNulls(true)
                                                       .build()));
     }
 
-    public Mono<UserModel> addUserToTable(final NewUserRequest request,
-                                          final String id,
-                                          final String folderId) {
+    public Mono<UserModel> addUser(final NewUserRequest request,
+                                   final String id,
+                                   final String folderId) {
         long currentTime = System.currentTimeMillis();
         var userModel = UserModel.builder()
                 .username(request.username)

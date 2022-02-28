@@ -37,7 +37,7 @@ public class UserHandler {
 
     public Mono<ServerResponse> getUserByUsername(final ServerRequest request) {
         String username = request.pathVariable("username");
-        return this.userService.getUserByUsernameFromTable(username)
+        return this.userService.getUserByUsername(username)
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(user)));
@@ -46,7 +46,7 @@ public class UserHandler {
     public Mono<ServerResponse> getCheckUsername(final ServerRequest request) {
         String username = request.pathVariable("username");
         return this.userService
-                .getUserByUsernameFromTable(username)
+                .getUserByUsername(username)
                 .map(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(new CredentialCheckBoolean(false))))
@@ -59,7 +59,7 @@ public class UserHandler {
     public Mono<ServerResponse> getCheckEmail(final ServerRequest request) {
         String email = request.pathVariable("email");
         return this.userService
-                .getUserByEmailFromTable(email)
+                .getUserByEmail(email)
                 .map(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(new CredentialCheckBoolean(false))))
@@ -103,7 +103,7 @@ public class UserHandler {
                         System.out.println("user3:" + id);
                         return true;
                     }).map(UserModel::getId)
-                    .flatMap(folderService::createRootFolderInTable)
+                    .flatMap(folderService::createRootFolder)
                     .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to receive folder")));
 
             var folderIdMono = folderMono.map(FolderModel::getId)
@@ -112,12 +112,12 @@ public class UserHandler {
             var userMono = Mono.zip(validUserId, folderIdMono)
                     .flatMap(data -> {
                         System.out.println("user2:" + data.getT1());
-                        return userService.addUserToTable(record, data.getT1().getId(), data.getT2());
+                        return userService.addUser(record, data.getT1().getId(), data.getT2());
                     })
                     .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to create user table")));
 
             return userMono.flatMap(userModel -> {
-                var userSecurityMono = userSecurityService.addUserSecurityToTable(record, userModel.getId())
+                var userSecurityMono = userSecurityService.addUserSecurity(record, userModel.getId())
                         .switchIfEmpty(Mono.error(new IllegalArgumentException("User credentials already set")));
 
                 System.out.println("should be creating:" + userModel.toString());
@@ -138,7 +138,7 @@ public class UserHandler {
                 .map(JWTManager.UserId::username);
         return usernameMono.flatMap(username -> request.bodyToMono(UserModel.class)
                         .filter(userModel -> username.equals(userModel.getUsername()))
-                        .flatMap(userService::updateUserTable)
+                        .flatMap(userService::updateUser)
                         .flatMap(userModel -> ServerResponse.ok()
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .body(BodyInserters.fromValue(userModel)))
@@ -153,6 +153,6 @@ public class UserHandler {
                && !newUser.password().isEmpty()
                && !newUser.firstName().isEmpty()
                && !newUser.lastName().isEmpty()
-               && userService.getUserByUsernameFromTable(newUser.username()).block() == null;
+               && userService.getUserByUsername(newUser.username()).block() == null;
     }
 }

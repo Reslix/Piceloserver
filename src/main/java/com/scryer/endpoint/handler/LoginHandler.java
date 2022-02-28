@@ -55,7 +55,7 @@ public class LoginHandler {
                 .cast(String.class)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Could not get password from context")));
         Mono<UserSecurityModel> userMono =
-                usernameMono.flatMap(username -> reactiveUserDetailsService.getUserFromTable(username));
+                usernameMono.flatMap(username -> reactiveUserDetailsService.getUser(username));
 
         return usernameMono.map(username -> cacheManager.getCache("logout").evictIfPresent(username))
                 .then(userMono)

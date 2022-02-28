@@ -25,7 +25,7 @@ public class TagService {
         this.tagTable = tagTable;
     }
 
-    public Mono<TagModel> getTagByNameAndUserIdFromTable(final String name, final String userId) {
+    public Mono<TagModel> getTagByNameAndUserId(final String name, final String userId) {
         var expression = Expression.builder()
                 .expression("name = :name")
                 .putExpressionValue(":name", AttributeValue.builder().s(name).build())
@@ -41,7 +41,7 @@ public class TagService {
                                  .next());
     }
 
-    public Mono<TagModel> putNewTagInTable(final String name, final String userId) {
+    public Mono<TagModel> addNewTag(final String name, final String userId) {
         var id = IdGenerator.uniqueIdForTable(tagTable, true);
         return Mono.fromCallable(() -> {
             tagTable.putItemWithResponse(PutItemEnhancedRequest.builder(TagModel.class)
@@ -90,15 +90,11 @@ public class TagService {
                                  .attributes());
     }
 
-    public Mono<Boolean> isTagInTable(final String name, final String userId) {
-        return Mono.just(getTagByNameAndUserIdFromTable(name, userId) != null);
-    }
-
-    public Mono<TagModel> deleteTagFromTable(final TagModel tag) {
+    public Mono<TagModel> deleteTag(final TagModel tag) {
         return Mono.justOrEmpty(tagTable.deleteItem(tag));
     }
 
-    public Mono<TagModel> deleteFolderTagFromTable(final TagModel tag, final String folderId) {
+    public Mono<TagModel> deleteFolderTag(final TagModel tag, final String folderId) {
         var tagsIds = tag.getFolderIds();
         Set<String> ids = new HashSet<>(tagsIds.size());
         ids.addAll(tagsIds);
@@ -115,7 +111,7 @@ public class TagService {
                                  .attributes());
     }
 
-    public Mono<TagModel> deleteImageTagFromTable(final TagModel tag, final String imageId) {
+    public Mono<TagModel> deleteImageTag(final TagModel tag, final String imageId) {
         var tagsIds = tag.getFolderIds();
         Set<String> ids = new HashSet<>(tagsIds.size());
         ids.addAll(tagsIds);

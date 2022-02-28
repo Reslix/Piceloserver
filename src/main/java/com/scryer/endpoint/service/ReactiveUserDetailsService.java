@@ -33,17 +33,17 @@ public class ReactiveUserDetailsService implements org.springframework.security.
     @Cacheable("userSecurity")
     @Override
     public Mono<UserDetails> findByUsername(final String username) {
-        return getUserFromTable(username).switchIfEmpty(Mono.just(username).filter(name -> name.contains("@")).
-                                                                flatMap(this::getUserByEmailFromTable))
+        return getUser(username).switchIfEmpty(Mono.just(username).filter(name -> name.contains("@")).
+                                                                flatMap(this::getUserByEmail))
                 .cast(UserDetails.class)
                 .switchIfEmpty(Mono.error(new UsernameNotFoundException(username)));
     }
 
-    public Mono<UserSecurityModel> getUserFromTable(final String username) {
+    public Mono<UserSecurityModel> getUser(final String username) {
         return Mono.justOrEmpty(this.userSecurityTable.getItem(Key.builder().partitionValue(username).build()));
     }
 
-    public Mono<UserSecurityModel> getUserByEmailFromTable(final String email) {
+    public Mono<UserSecurityModel> getUserByEmail(final String email) {
         var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(email).build());
         var queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
@@ -57,7 +57,7 @@ public class ReactiveUserDetailsService implements org.springframework.security.
 
     }
 
-    public Mono<UserSecurityModel> addUserSecurityToTable(final UserService.NewUserRequest request, final String id) {
+    public Mono<UserSecurityModel> addUserSecurity(final UserService.NewUserRequest request, final String id) {
         var userSecurityModel = UserSecurityModel.builder()
                 .username(request.username())
                 .email(request.email())

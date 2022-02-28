@@ -3,6 +3,7 @@ package com.scryer.endpoint.handler;
 import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.ImageResizeService;
 import com.scryer.endpoint.service.ImageService;
+import com.scryer.endpoint.service.ImageUploadService;
 import com.scryer.model.ddb.BaseIdentifier;
 import com.scryer.model.ddb.ImageSrcModel;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -22,13 +23,16 @@ import java.util.Map;
 public class ImageHandler {
 
     private final ImageService imageService;
+    private final ImageUploadService imageUploadService;
     private final ImageResizeService imageResizeService;
     private final JWTManager jwtManager;
 
     public ImageHandler(final ImageService imageService,
+                        final ImageUploadService imageUploadService,
                         final ImageResizeService imageResizeService,
                         final JWTManager jwtManager) {
         this.imageService = imageService;
+        this.imageUploadService = imageUploadService;
         this.imageResizeService = imageResizeService;
         this.jwtManager = jwtManager;
     }
@@ -38,7 +42,7 @@ public class ImageHandler {
     //Delete images
     public Mono<ServerResponse> getImagesByFolder(final ServerRequest request) {
         String folderId = request.pathVariable("folderId");
-        return imageService.getImageSrcForFolderFromTable(folderId).collectList()
+        return imageService.getImageSrcForFolder(folderId).collectList()
                 .flatMap(imageSrcs -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(imageSrcs)));
@@ -77,23 +81,23 @@ public class ImageHandler {
             // get the image IDs for both images - reserve their spots in the table.
             var thumbnailIdMono = imageService.getUniqueId()
                     .map(id -> ImageSrcModel.builder().id(id).build())
-                    .flatMap(imageService::addToImageSrcTable).map(ImageSrcModel::getId);
+                    .flatMap(imageService::addImageSrc).map(ImageSrcModel::getId);
 
             // write images to s3
             var thumbnailLocation = Mono.zip(thumbnailIdMono, thumbnailMono, typeStringMono)
-                    .map(t3 -> imageService.addImagesToS3(t3.getT1(), "thumbnail", t3.getT2(), t3.getT3()))
+                    .map(t3 -> imageUploadService.uploadImage(t3.getT1(), "thumbnail", t3.getT2(), t3.getT3()))
                     .flatMap(response -> response)
                     .doOnError(error -> {
                         thumbnailIdMono.map(id -> ImageSrcModel.builder().id(id).build())
-                                .map(imageService::deleteImageSrcFromTable);
+                                .map(imageService::deleteImageSrc);
                     });
 
             var fullImageLocation = Mono.zip(thumbnailIdMono, fullImageMono, typeStringMono)
-                    .map(t3 -> imageService.addImagesToS3(t3.getT1(), "full", t3.getT2(), t3.getT3()))
+                    .map(t3 -> imageUploadService.uploadImage(t3.getT1(), "full", t3.getT2(), t3.getT3()))
                     .flatMap(response -> response)
                     .doOnError(error -> {
                         thumbnailIdMono.map(id -> ImageSrcModel.builder().id(id).build())
-                                .map(imageService::deleteImageSrcFromTable);
+                                .map(imageService::deleteImageSrc);
                     });
 
             // get imageSrc for both
@@ -113,7 +117,7 @@ public class ImageHandler {
                                                   "full",
                                                   t6.getT6()))
                     // For whatever reason method reference does not work
-                    .flatMap(imageSrc -> imageService.updateImageSrcTable(imageSrc));
+                    .flatMap(imageSrc -> imageService.updateImageSrc(imageSrc));
 
             // return thumbnail imageSrc
             // fullImageSrcMono.then(..) leads to fullImageSrcMono not running so I probably don't understand it at all
