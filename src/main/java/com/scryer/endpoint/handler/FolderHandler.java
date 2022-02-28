@@ -21,24 +21,24 @@ public class FolderHandler {
         this.jwtManager = jwtManager;
     }
 
-    public Mono<ServerResponse> getFolderById(final ServerRequest request) {
-        String folderId = request.pathVariable("folderId");
+    public Mono<ServerResponse> getFolderById(final ServerRequest serverRequest) {
+        String folderId = serverRequest.pathVariable("folderId");
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromPublisher(folderService.getFolderById(folderId), FolderModel.class));
     }
 
-    public Mono<ServerResponse> getFolderMapByUserId(final ServerRequest request) {
-        String userId = request.pathVariable("userId");
+    public Mono<ServerResponse> getFolderMapByUserId(final ServerRequest serverRequest) {
+        String userId = serverRequest.pathVariable("userId");
         System.out.println("user1:" + userId);
         return folderService.getFoldersMapByUserId(userId).flatMap(folderMap -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(folderMap)));
     }
 
-    public Mono<ServerResponse> postNewFolder(final ServerRequest request) {
-        return request.bodyToMono(FolderService.NewFolderRequest.class)
-                .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.userId()))
+    public Mono<ServerResponse> postNewFolder(final ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(FolderService.NewFolderRequest.class)
+                .filter(folder -> jwtManager.getUserIdentity(serverRequest).id().equals(folder.userId()))
                 .flatMap(folderService::createFolder)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -50,10 +50,10 @@ public class FolderHandler {
                 .flatMap(response -> response);
     }
 
-    public Mono<ServerResponse> putUpdateFolder(final ServerRequest request) {
-        return request.bodyToMono(FolderModel.class)
-                .filter(folder -> Long.valueOf(request.pathVariable("folderId")).equals(folder.getId()))
-                .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.getUserId()))
+    public Mono<ServerResponse> putUpdateFolder(final ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(FolderModel.class)
+                .filter(folder -> Long.valueOf(serverRequest.pathVariable("folderId")).equals(folder.getId()))
+                .filter(folder -> jwtManager.getUserIdentity(serverRequest).id().equals(folder.getUserId()))
                 .flatMap(folderService::updateFolder)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,10 +65,10 @@ public class FolderHandler {
                 .flatMap(response -> response);
     }
 
-    public Mono<ServerResponse> deleteFolder(final ServerRequest request) {
-        return request.bodyToMono(FolderModel.class)
-                .filter(folder -> Long.valueOf(request.pathVariable("folderId")).equals(folder.getId()))
-                .filter(folder -> jwtManager.getUserIdentity(request).id().equals(folder.getUserId()))
+    public Mono<ServerResponse> deleteFolder(final ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(FolderModel.class)
+                .filter(folder -> Long.valueOf(serverRequest.pathVariable("folderId")).equals(folder.getId()))
+                .filter(folder -> jwtManager.getUserIdentity(serverRequest).id().equals(folder.getUserId()))
                 .flatMap(folderService::deleteFolder)
                 .map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)

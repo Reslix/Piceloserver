@@ -35,16 +35,16 @@ public class UserHandler {
         this.jwtManager = jwtManager;
     }
 
-    public Mono<ServerResponse> getUserByUsername(final ServerRequest request) {
-        String username = request.pathVariable("username");
+    public Mono<ServerResponse> getUserByUsername(final ServerRequest serverRequest) {
+        String username = serverRequest.pathVariable("username");
         return this.userService.getUserByUsername(username)
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(user)));
     }
 
-    public Mono<ServerResponse> getCheckUsername(final ServerRequest request) {
-        String username = request.pathVariable("username");
+    public Mono<ServerResponse> getCheckUsername(final ServerRequest serverRequest) {
+        String username = serverRequest.pathVariable("username");
         return this.userService
                 .getUserByUsername(username)
                 .map(user -> ServerResponse.ok()
@@ -56,8 +56,8 @@ public class UserHandler {
                 .flatMap(response -> response);
     }
 
-    public Mono<ServerResponse> getCheckEmail(final ServerRequest request) {
-        String email = request.pathVariable("email");
+    public Mono<ServerResponse> getCheckEmail(final ServerRequest serverRequest) {
+        String email = serverRequest.pathVariable("email");
         return this.userService
                 .getUserByEmail(email)
                 .map(user -> ServerResponse.ok()
@@ -69,29 +69,11 @@ public class UserHandler {
                 .flatMap(response -> response);
     }
 
-    /**
-     * With a new user, we require the following information:
-     * * username
-     * * password
-     * * email
-     * * first name (optional and can be updated)
-     * * last name (optional and can be updated)
-     * * display name (optional and can be updated)
-     * <p>
-     * Fields that will be generated:
-     * * create date
-     * * last login
-     * * rootFolderId
-     * *
-     *
-     * @param request
-     * @return
-     */
-    public Mono<ServerResponse> postNewUser(final ServerRequest request) {
-        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(request))
+    public Mono<ServerResponse> postNewUser(final ServerRequest serverRequest) {
+        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserId::username);
 
-        var requestRecord = request.bodyToMono(UserService.NewUserRequest.class);
+        var requestRecord = serverRequest.bodyToMono(UserService.NewUserRequest.class);
 
         var validRecord = usernameMono.then(requestRecord.filter(this::validateNewUserRequest));
 
@@ -133,10 +115,10 @@ public class UserHandler {
         }).switchIfEmpty(Mono.error(new IllegalArgumentException("Username already taken")));
     }
 
-    public Mono<ServerResponse> updateUser(final ServerRequest request) {
-        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(request))
+    public Mono<ServerResponse> updateUser(final ServerRequest serverRequest) {
+        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserId::username);
-        return usernameMono.flatMap(username -> request.bodyToMono(UserModel.class)
+        return usernameMono.flatMap(username -> serverRequest.bodyToMono(UserModel.class)
                         .filter(userModel -> username.equals(userModel.getUsername()))
                         .flatMap(userService::updateUser)
                         .flatMap(userModel -> ServerResponse.ok()

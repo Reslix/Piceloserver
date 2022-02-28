@@ -40,19 +40,19 @@ public class ImageHandler {
     //Get imagesrc by folder
     //Upload image
     //Delete images
-    public Mono<ServerResponse> getImagesByFolder(final ServerRequest request) {
-        String folderId = request.pathVariable("folderId");
+    public Mono<ServerResponse> getImagesByFolder(final ServerRequest serverRequest) {
+        String folderId = serverRequest.pathVariable("folderId");
         return imageService.getImageSrcForFolder(folderId).collectList()
                 .flatMap(imageSrcs -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(imageSrcs)));
     }
 
-    public Mono<ServerResponse> postImage(final ServerRequest request) {
-        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(request))
+    public Mono<ServerResponse> postImage(final ServerRequest serverRequest) {
+        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserId::id);
         return usernameMono.flatMap(userId -> {
-            var multivalueMono = request.multipartData().map(MultiValueMap::toSingleValueMap);
+            var multivalueMono = serverRequest.multipartData().map(MultiValueMap::toSingleValueMap);
             var typeStringMono = multivalueMono.map(map -> map.get("type").content())
                     .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
                             .map(buffer -> new String(buffer.asByteBuffer().array())))
@@ -129,7 +129,7 @@ public class ImageHandler {
         }).switchIfEmpty(ServerResponse.status(HttpStatus.UNAUTHORIZED).build());
     }
 
-    public Mono<ServerResponse> deleteImage(final ServerRequest request) {
+    public Mono<ServerResponse> deleteImage(final ServerRequest serverRequest) {
         return Mono.empty();
     }
 

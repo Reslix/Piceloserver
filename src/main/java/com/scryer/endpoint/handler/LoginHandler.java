@@ -40,10 +40,10 @@ public class LoginHandler {
     /**
      * Also some questionable logic for using caches
      *
-     * @param request
+     * @param serverRequest
      * @return
      */
-    public Mono<ServerResponse> login(final ServerRequest request) {
+    public Mono<ServerResponse> login(final ServerRequest serverRequest) {
         Mono<String> usernameMono = ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .map(Principal::getName)
@@ -82,12 +82,12 @@ public class LoginHandler {
     /**
      * There is some highly questionable stuff going on here that should probably be replaced by reactive redis.
      *
-     * @param request
+     * @param serverRequest
      * @return
      */
-    public Mono<ServerResponse> logout(final ServerRequest request) {
+    public Mono<ServerResponse> logout(final ServerRequest serverRequest) {
         System.out.println("1");
-        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(request))
+        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserId::username);
         return usernameMono.flatMap(reactiveUserDetailsService::findByUsername)
                 .map(userDetails -> {
