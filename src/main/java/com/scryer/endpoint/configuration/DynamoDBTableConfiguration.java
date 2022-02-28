@@ -23,17 +23,17 @@ public class DynamoDBTableConfiguration {
     public DynamoDbTable<UserModel> userTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                      .indexName("userId_index")
-                                                      .projection(projection)
-                                                      .build();
+                .indexName("userId_index")
+                .projection(projection)
+                .build();
         var emailIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                     .indexName("email_index")
-                                                     .projection(projection)
-                                                     .build();
+                .indexName("email_index")
+                .projection(projection)
+                .build();
 
         var request = CreateTableEnhancedRequest.builder()
-                                                .globalSecondaryIndices(userIdIndex, emailIndex)
-                                                .build();
+                .globalSecondaryIndices(userIdIndex, emailIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, UserModel.class, request);
     }
 
@@ -41,13 +41,13 @@ public class DynamoDBTableConfiguration {
     public DynamoDbTable<FolderModel> folderTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                      .indexName("userId_index")
-                                                      .projection(projection)
-                                                      .build();
+                .indexName("userId_index")
+                .projection(projection)
+                .build();
 
         var request = CreateTableEnhancedRequest.builder()
-                                                .globalSecondaryIndices(userIdIndex)
-                                                .build();
+                .globalSecondaryIndices(userIdIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, FolderModel.class, request);
     }
 
@@ -55,12 +55,12 @@ public class DynamoDBTableConfiguration {
     public DynamoDbTable<ImageSrcModel> imageSrcTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var folderIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                      .indexName("folder_index")
-                                                      .projection(projection)
-                                                      .build();
+                .indexName("folder_index")
+                .projection(projection)
+                .build();
         var request = CreateTableEnhancedRequest.builder()
-                                                .globalSecondaryIndices(folderIndex)
-                                                .build();
+                .globalSecondaryIndices(folderIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, ImageSrcModel.class, request);
     }
 
@@ -68,31 +68,31 @@ public class DynamoDBTableConfiguration {
     public DynamoDbTable<ImageRankingsModel> imageRankingsTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                      .indexName("userId_index")
-                                                      .projection(projection)
-                                                      .build();
+                .indexName("userId_index")
+                .projection(projection)
+                .build();
 
         var request = CreateTableEnhancedRequest.builder()
-                                                .globalSecondaryIndices(userIdIndex)
-                                                .build();
+                .globalSecondaryIndices(userIdIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, ImageRankingsModel.class, request);
     }
 
     @Bean
     public DynamoDbTable<TagModel> tagTable(final DynamoDbEnhancedClient client) {
-        var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
+        var projection = Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes("id").build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                     .indexName("userId_index")
-                                                     .projection(projection)
-                                                     .build();
+                .indexName("userId_index")
+                .projection(projection)
+                .build();
         var tagIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                   .indexName("tag_index")
-                                                   .projection(projection)
-                                                   .build();
+                .indexName("tag_index")
+                .projection(projection)
+                .build();
 
         var request = CreateTableEnhancedRequest.builder()
-                                                .globalSecondaryIndices(userIdIndex, tagIndex)
-                                                .build();
+                .globalSecondaryIndices(userIdIndex, tagIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, TagModel.class, request);
     }
 
@@ -100,17 +100,17 @@ public class DynamoDBTableConfiguration {
     public DynamoDbTable<UserSecurityModel> userSecurityTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                      .indexName("userId_index")
-                                                      .projection(projection)
-                                                      .build();
+                .indexName("userId_index")
+                .projection(projection)
+                .build();
         var emailIndex = EnhancedGlobalSecondaryIndex.builder()
-                                                     .indexName("email_index")
-                                                     .projection(projection)
-                                                     .build();
+                .indexName("email_index")
+                .projection(projection)
+                .build();
 
         var request = CreateTableEnhancedRequest.builder()
-                                                .globalSecondaryIndices(userIdIndex, emailIndex)
-                                                .build();
+                .globalSecondaryIndices(userIdIndex, emailIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, UserSecurityModel.class, request);
     }
 }
