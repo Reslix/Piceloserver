@@ -5,16 +5,16 @@ import com.scryer.util.IdGenerator;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.util.List;
+
+import static com.scryer.util.ConsolidateUtil.getCombinedTags;
 
 @Service
 public class ImageService {
@@ -48,6 +48,22 @@ public class ImageService {
                                                           .item(imageSrc)
                                                           .ignoreNulls(true)
                                                           .build()));
+    }
+
+    public Mono<ImageSrcModel> addTagsToImageSrc(final ImageSrcModel imageSrc, List<String> tags) {
+        return updateImageSrc(ImageSrcModel.builder()
+                                      .id(imageSrc.getId())
+                                      .lastModified(System.currentTimeMillis())
+                                      .tags(getCombinedTags(imageSrc, tags))
+                                      .build());
+    }
+
+    public Mono<ImageSrcModel> deleteImageSrcTags(final ImageSrcModel imageSrc, List<String> tags) {
+        return updateImageSrc(ImageSrcModel.builder()
+                                      .id(imageSrc.getId())
+                                      .lastModified(System.currentTimeMillis())
+                                      .tags(getCombinedTags(imageSrc, tags))
+                                      .build());
     }
 
     public Mono<ImageSrcModel> addImageSrc(final ImageSrcModel imageSrc) {

@@ -1,13 +1,11 @@
 package com.scryer.endpoint.handler;
 
 import com.scryer.endpoint.security.JWTManager;
-import com.scryer.endpoint.service.FolderService;
 import com.scryer.endpoint.service.ImageService;
 import com.scryer.endpoint.service.TagService;
 import com.scryer.endpoint.service.UserService;
-import com.scryer.model.ddb.FolderModel;
-import com.scryer.model.ddb.HasTags;
 import com.scryer.model.ddb.ImageSrcModel;
+import com.scryer.model.ddb.TagModel;
 import com.scryer.model.ddb.UserModel;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -16,38 +14,31 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class TagHandler {
     private final TagService tagService;
     private final UserService userService;
-    private final FolderService folderService;
     private final ImageService imageService;
     private final JWTManager jwtManager;
 
     public TagHandler(final TagService tagService,
                       final UserService userService,
-                      final FolderService folderService,
                       final ImageService imageService,
                       final JWTManager jwtManager) {
         this.tagService = tagService;
         this.userService = userService;
-        this.folderService = folderService;
         this.imageService = imageService;
         this.jwtManager = jwtManager;
     }
 
-    public Mono<ServerResponse> getTagByName(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
-        String name = request.pathVariable("tagName");
-        return tagService.getTagByNameAndUserIdFromTable(name, userId.id())
+    public Mono<ServerResponse> getTagByName(final ServerRequest serverRequest) {
+        JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
+        String name = serverRequest.pathVariable("tagName");
+        return tagService.getTag(name, userIdentity.id())
                 .map(tag -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(tag)))
@@ -55,125 +46,123 @@ public class TagHandler {
 
     }
 
+    public Mono<ServerResponse> updateTagImageSrcs(final ServerRequest serverRequest) {
+        JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
+        var userId = userIdentity.id();
+        var username = userIdentity.username();
+        var userMono = userService.getUserByUsername(username);
 
-    public Mono<ServerResponse> postNewTags(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
+        var requestMono = serverRequest.bodyToMono(UpdateTagImageSrcsRequest.class).cache();
+        var imageIdsMono = requestMono.map(request -> request.imageIds).cache();
+        var imageSrcsMono = imageIdsMono.flatMapIterable(list -> list).flatMap(imageService::getImageSrc);
+        var tagNameMono = requestMono.map(UpdateTagImageSrcsRequest::tag).cache();
+        var tagMono = tagNameMono.flatMap(tag -> tagService.getTag(tag, userId)
+                .switchIfEmpty(tagService.addNewTag(tag, userId))).cache();
 
-        var requestFlux = request.bodyToFlux(String.class);
-        var tagIsntPresentFlux = requestFlux.flatMap(tag -> tagService.isTagInTable(tag, userId.id()));
-        var filteredFlux = Flux.zip(requestFlux, tagIsntPresentFlux)
-                .filter(tuple -> !tuple.getT2())
-                .map(Tuple2::getT1);
-        var tagServiceMono = filteredFlux.flatMap(tag -> tagService.putNewTagInTable(tag, userId.id())).collectList();
-        var userServiceMono = filteredFlux.collect(Collectors.toList())
-                .zipWith(userService.getUserByUsernameFromTable(userId.username()))
-                .flatMap(tuple -> {
-                    var tags = tuple.getT1();
-                    var user = tuple.getT2();
-                    var newTags = getCombinedTags(user, tags);
-                    var newUser = UserModel.builder()
-                            .username(user.getUsername())
-                            .lastModified(System.currentTimeMillis())
-                            .tags(newTags)
-                            .build();
+        var updatedUserMono = Mono.zip(userMono, tagNameMono.map(List::of), userService::addUserTags);
+        var updatedTagMono = Mono.zip(tagMono, imageIdsMono, tagService::updateTagImageIds);
+        var updatedImagesMono = Flux.zip(imageSrcsMono,
+                                         tagMono.repeat().map(TagModel::getName).map(List::of),
+                                         imageService::addTagsToImageSrc)
+                .flatMap(image -> image)
+                .collectList();
 
-                    return userService.updateUserTable(newUser);
-                });
-        return Mono.zip(tagServiceMono, userServiceMono, (tag, user) -> tag)
-                .map(tags -> ServerResponse.ok()
+        return updatedUserMono
+                .then(updatedTagMono)
+                .then(updatedImagesMono)
+                .flatMap(images -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(BodyInserters.fromValue(tags)))
-                .flatMap(response -> response);
-
+                        .body(BodyInserters.fromValue(images)));
     }
 
-
-    public Mono<ServerResponse> updateTagsForFolder(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
-        String folderId = request.pathVariable("folderId");
-
-        var requestTags = request.bodyToFlux(String.class);
-
-        var tagTags = requestTags.flatMap(tag -> tagService.getTagByNameAndUserIdFromTable(tag, userId.id()))
-                .map(tag -> tagService.updateTagFolderId(tag, folderId)).collectList();
-
-        var folderTags = requestTags.collectList()
-                .zipWith(folderService.getFolderByIdFromTable(folderId))
-                .map(tuple -> {
-                    var tags = tuple.getT1();
-                    var folder = tuple.getT2();
-                    var newTags = getCombinedTags(folder, tags);
-                    var newFolder = FolderModel.builder()
-                            .id(folder.getId())
-                            .lastModified(System.currentTimeMillis())
-                            .tags(newTags)
-                            .build();
-
-                    return folderService.updateFolderTable(newFolder);
-                });
-        return Mono.zip(tagTags, folderTags, (a, b) -> ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(BodyInserters.fromValue(b)))
-                .flatMap(response -> response);
+    record UpdateTagImageSrcsRequest(List<String> imageIds, String tag) {
     }
 
+    public Mono<ServerResponse> updateImageSrcTags(final ServerRequest serverRequest) {
+        JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
+        var userId = userIdentity.id();
+        var username = userIdentity.username();
+        var userMono = userService.getUserByUsername(username);
 
-    public Mono<ServerResponse> updateTagsForImageSrc(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
-        String imageId = request.pathVariable("imageId");
+        var requestMono = serverRequest.bodyToMono(UpdateImageSrcTagsRequest.class).cache();
+        var imageIdMono = requestMono.map(UpdateImageSrcTagsRequest::imageId).cache();
+        var imageSrcMono = imageIdMono.flatMap(imageService::getImageSrc);
+        var tagsMono = requestMono.map(UpdateImageSrcTagsRequest::tags).cache();
+        var tagsFlux = tagsMono.flatMapIterable(list -> list)
+                .flatMap(tag -> tagService.getTag(tag, userId).switchIfEmpty(tagService.addNewTag(tag, userId)));
 
-        var requestTags = request.bodyToFlux(String.class);
+        var updatedUserMono = Mono.zip(userMono, tagsMono, userService::addUserTags);
+        var updatedTagsMono = Flux.zip(tagsFlux, imageIdMono.map(List::of).repeat(), tagService::updateTagImageIds)
+                .collectList();
+        var updatedImageSrcMono = Mono.zip(imageSrcMono, tagsMono, imageService::addTagsToImageSrc)
+                .flatMap(imageSrc -> imageSrc);
 
-        var tagTags = requestTags.flatMap(tag -> tagService.getTagByNameAndUserIdFromTable(tag, userId.id()))
-                .map(tag -> tagService.updateTagImageId(tag, imageId)).collectList();
-
-        var imageTags = requestTags.collectList()
-                .zipWith(imageService.getImageSrcFromTable(imageId))
-                .map(tuple -> {
-                    var tags = tuple.getT1();
-                    var imageSrc = tuple.getT2();
-                    var newTags = getCombinedTags(imageSrc, tags);
-                    var newImageSrc = ImageSrcModel.builder()
-                            .id(imageSrc.getId())
-                            .lastModified(System.currentTimeMillis())
-                            .tags(newTags)
-                            .build();
-
-                    return imageService.updateImageSrcTable(newImageSrc);
-                });
-        return Mono.zip(tagTags, imageTags, (a, b) -> ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(BodyInserters.fromValue(b)))
-                .flatMap(response -> response);
+        return updatedUserMono
+                .then(updatedTagsMono)
+                .then(updatedImageSrcMono)
+                .flatMap(imageSrc -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON).
+                        body(BodyInserters.fromValue(imageSrc)));
     }
 
-    public Mono<ServerResponse> deleteTags(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
-
-        // Delete tags from images
-        // Delete tags from user
-        // Delete tags itself
-
-        return Mono.empty();
-
+    record UpdateImageSrcTagsRequest(String imageId, List<String> tags) {
     }
 
-    public Mono<ServerResponse> deleteTagsFromFolder(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
+    public Mono<ServerResponse> deleteImageSrcTags(final ServerRequest serverRequest) {
+        JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
+        var userId = userIdentity.id();
+        var username = userIdentity.username();
+        var userMono = userService.getUserByUsername(username);
 
-        return Mono.empty();
+        var requestMono = serverRequest.bodyToMono(DeleteImageSrcTagsRequest.class).cache();
+        var tagNamesMono = requestMono.map(DeleteImageSrcTagsRequest::tags).cache();
+        var imageIdMono = requestMono.map(DeleteImageSrcTagsRequest::imageId).cache();
+        var tagsFlux = tagNamesMono.flatMapIterable(list -> list).flatMap(tag -> tagService.getTag(tag, userId));
+        var imageMono = imageIdMono.flatMap(imageService::getImageSrc);
+        var deletedTagsMono = Flux.zip(tagsFlux, imageMono.repeat().map(ImageSrcModel::getId).map(List::of),
+                                       tagService::deleteTagImages).flatMap(tag -> tag)
+                .filter(tag -> tag.getImageRankingIds().size() == 0 && tag.getImageIds().size() == 0)
+                .map(TagModel::getName)
+                .collectList();
+        var updatedUserMono = Mono.zip(userMono, deletedTagsMono, userService::deleteUserTags);
+        var updatedImageMono = Mono.zip(imageMono, tagNamesMono, imageService::deleteImageSrcTags)
+                .flatMap(image -> image);
+
+        return updatedUserMono.then(updatedImageMono).flatMap(imageSrc -> ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(imageSrc)));
     }
 
-    public Mono<ServerResponse> deleteTagsFromImageSrc(final ServerRequest request) {
-        JWTManager.UserId userId = jwtManager.getUserIdentity(request);
-
-        return Mono.empty();
+    record DeleteImageSrcTagsRequest(String imageId, List<String> tags) {
     }
 
-    private <T extends HasTags> List<String> getCombinedTags(final HasTags item, final Collection<String> tags) {
-        Set<String> newTags = new HashSet<>(tags.size() + item.getTags().size());
-        newTags.addAll(tags);
-        newTags.addAll(item.getTags());
-        return List.copyOf(newTags);
+    public Mono<ServerResponse> deleteTagImageSrcs(final ServerRequest serverRequest) {
+        JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
+        var userId = userIdentity.id();
+        var username = userIdentity.username();
+        var userMono = userService.getUserByUsername(username);
+
+        var requestMono = serverRequest.bodyToMono(DeleteTagImageSrcsRequest.class).cache();
+        var tagNameMono = requestMono.map(DeleteTagImageSrcsRequest::tag).cache();
+        var imageIdsMono = requestMono.map(DeleteTagImageSrcsRequest::imageIds);
+        var tagMono = tagNameMono.flatMap(tag -> tagService.getTag(tag, userId)).cache();
+        var imageFlux = imageIdsMono.flatMapIterable(list -> list).flatMap(imageService::getImageSrc);
+        var deletedTagMono = Mono.zip(tagMono, imageIdsMono, tagService::deleteTagImages)
+                .flatMap(tag -> tag)
+                .filter(tag -> tag.getImageRankingIds().size() == 0 && tag.getImageIds().size() == 0)
+                .map(TagModel::getName)
+                .map(List::of);
+        var updatedUserMono = Mono.zip(userMono, deletedTagMono, userService::deleteUserTags);
+        var updatedImagesMono = Flux.zip(imageFlux, tagNameMono.repeat().map(List::of),
+                                         imageService::deleteImageSrcTags)
+                .flatMap(list -> list)
+                .collectList();
+
+        return updatedUserMono.then(updatedImagesMono).flatMap(imageSrc -> ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(imageSrc)));
+    }
+
+    record DeleteTagImageSrcsRequest(List<String> imageIds, String tag) {
     }
 }

@@ -5,13 +5,11 @@ import com.scryer.util.IdGenerator;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.HashSet;
 import java.util.List;
@@ -25,59 +23,41 @@ public class TagService {
         this.tagTable = tagTable;
     }
 
-    public Mono<TagModel> getTagByNameAndUserId(final String name, final String userId) {
-        var expression = Expression.builder()
-                .expression("name = :name")
-                .putExpressionValue(":name", AttributeValue.builder().s(name).build())
-                .build();
-        var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(userId).build());
-        return Mono.just(tagTable.query(QueryEnhancedRequest.builder()
-                                                .queryConditional(queryConditional)
-                                                .filterExpression(expression)
-                                                .attributesToProject()
-                                                .build())
-                                 .items()
-                                 .iterator()
-                                 .next());
+    public Mono<TagModel> getTag(final String name, final String userId) {
+        var queryConditional = QueryConditional.keyEqualTo(Key.builder()
+                                                                   .partitionValue(name)
+                                                                   .sortValue(userId)
+                                                                   .build());
+        return Mono.justOrEmpty(tagTable.index("tag_index")
+                                        .query(QueryEnhancedRequest.builder()
+                                                       .queryConditional(queryConditional)
+                                                       .attributesToProject()
+                                                       .build())
+                                        .stream()
+                                        .flatMap(page -> page.items().stream())
+                                        .findFirst().map(tagTable::getItem));
     }
 
     public Mono<TagModel> addNewTag(final String name, final String userId) {
         var id = IdGenerator.uniqueIdForTable(tagTable, true);
-        return Mono.fromCallable(() -> {
-            tagTable.putItemWithResponse(PutItemEnhancedRequest.builder(TagModel.class)
-                                                 .item(TagModel.builder()
-                                                               .id(id)
-                                                               .name(name)
-                                                               .folderIds(List.of())
-                                                               .imageIds(List.of())
-                                                               .userId(userId)
-                                                               .build()).build());
-            return tagTable.getItem(Key.builder().partitionValue(id).build());
-        });
+        return Mono.justOrEmpty(tagTable.putItemWithResponse(PutItemEnhancedRequest.builder(TagModel.class)
+                                                                     .item(TagModel.builder()
+                                                                                   .id(id)
+                                                                                   .name(name)
+                                                                                   .imageIds(List.of())
+                                                                                   .imageRankingIds(List.of())
+                                                                                   .userId(userId)
+                                                                                   .build()).build())
+                                        .attributes())
+                .defaultIfEmpty(tagTable.getItem(Key.builder().partitionValue(id).build()));
+
     }
 
-    public Mono<TagModel> updateTagFolderId(final TagModel tag, final String folderId) {
-        var tagsIds = tag.getFolderIds();
+    public Mono<TagModel> updateTagImageIds(final TagModel tag, final List<String> imageIds) {
+        var tagsIds = tag.getImageIds();
         Set<String> ids = new HashSet<>(tagsIds.size() + 1);
         ids.addAll(tagsIds);
-        ids.add(folderId);
-        var newTagModel =
-                TagModel.builder()
-                        .id(tag.getId())
-                        .folderIds(List.copyOf(ids))
-                        .build();
-        return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
-                                                                 .item(newTagModel)
-                                                                 .ignoreNulls(true)
-                                                                 .build())
-                                 .attributes());
-    }
-
-    public Mono<TagModel> updateTagImageId(final TagModel tag, final String imageId) {
-        var tagsIds = tag.getFolderIds();
-        Set<String> ids = new HashSet<>(tagsIds.size() + 1);
-        ids.addAll(tagsIds);
-        ids.add(imageId);
+        ids.addAll(imageIds);
         var newTagModel =
                 TagModel.builder()
                         .id(tag.getId())
@@ -89,43 +69,38 @@ public class TagService {
                                                                  .build())
                                  .attributes());
     }
+
 
     public Mono<TagModel> deleteTag(final TagModel tag) {
         return Mono.justOrEmpty(tagTable.deleteItem(tag));
     }
 
-    public Mono<TagModel> deleteFolderTag(final TagModel tag, final String folderId) {
-        var tagsIds = tag.getFolderIds();
+    public Mono<TagModel> deleteTagImages(final TagModel tag, final List<String> imageId) {
+        var tagsIds = tag.getImageIds();
         Set<String> ids = new HashSet<>(tagsIds.size());
         ids.addAll(tagsIds);
-        ids.remove(folderId);
-        var newTagModel =
-                TagModel.builder()
-                        .id(tag.getId())
-                        .folderIds(List.copyOf(ids))
-                        .build();
-        return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
-                                                                 .item(newTagModel)
-                                                                 .ignoreNulls(true)
-                                                                 .build())
-                                 .attributes());
-    }
+        imageId.forEach(ids::remove);
 
-    public Mono<TagModel> deleteImageTag(final TagModel tag, final String imageId) {
-        var tagsIds = tag.getFolderIds();
-        Set<String> ids = new HashSet<>(tagsIds.size());
-        ids.addAll(tagsIds);
-        ids.remove(imageId);
         var newTagModel =
                 TagModel.builder()
                         .id(tag.getId())
                         .imageIds(List.copyOf(ids))
                         .build();
-        return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
-                                                                 .item(newTagModel)
-                                                                 .ignoreNulls(true)
-                                                                 .build())
-                                 .attributes());
+        if (ids.size() > 0 || tag.getImageRankingIds().size() > 0) {
+            return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
+                                                                     .item(newTagModel)
+                                                                     .ignoreNulls(true)
+                                                                     .build())
+                                     .attributes());
+        }
+        else {
+            return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
+                                                                     .item(newTagModel)
+                                                                     .ignoreNulls(true)
+                                                                     .build())
+                                     .attributes())
+                    .flatMap(this::deleteTag);
+        }
     }
 
 }

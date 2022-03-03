@@ -1,6 +1,7 @@
 package com.scryer.endpoint.service;
 
 import com.scryer.model.ddb.UserModel;
+import com.scryer.util.ConsolidateUtil;
 import com.scryer.util.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -61,10 +62,38 @@ public class UserService {
                                                       .build()));
     }
 
+    public Mono<UserModel> addUserTags(final UserModel user, final List<String> tags) {
+        var newTags = ConsolidateUtil.getSubtractedTags(user, tags);
+        if (newTags.size() != user.getTags().size()) {
+            return updateUser(UserModel.builder()
+                                      .id(user.getId())
+                                      .username(user.getUsername())
+                                      .lastModified(System.currentTimeMillis())
+                                      .tags(newTags)
+                                      .build());
+
+        }
+        return Mono.just(user);
+    }
+
+    public Mono<UserModel> deleteUserTags(final UserModel user, final List<String> tags) {
+        var newTags = ConsolidateUtil.getCombinedTags(user, tags);
+        if (newTags.size() != user.getTags().size()) {
+            return updateUser(UserModel.builder()
+                                      .id(user.getId())
+                                      .username(user.getUsername())
+                                      .lastModified(System.currentTimeMillis())
+                                      .tags(newTags)
+                                      .build());
+
+        }
+        return Mono.just(user);
+    }
+
     public Mono<UserModel> addUser(final NewUserRequest request,
                                    final String id,
                                    final String folderId) {
-        long currentTime = System.currentTimeMillis();
+        var currentTime = System.currentTimeMillis();
         var userModel = UserModel.builder()
                 .username(request.username)
                 .displayName(request.displayName)

@@ -36,16 +36,16 @@ public class UserHandler {
     }
 
     public Mono<ServerResponse> getUserByUsername(final ServerRequest serverRequest) {
-        String username = serverRequest.pathVariable("username");
-        return this.userService.getUserByUsername(username)
+        var username = serverRequest.pathVariable("username");
+        return userService.getUserByUsername(username)
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(user)));
     }
 
     public Mono<ServerResponse> getCheckUsername(final ServerRequest serverRequest) {
-        String username = serverRequest.pathVariable("username");
-        return this.userService
+        var username = serverRequest.pathVariable("username");
+        return userService
                 .getUserByUsername(username)
                 .map(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -57,8 +57,8 @@ public class UserHandler {
     }
 
     public Mono<ServerResponse> getCheckEmail(final ServerRequest serverRequest) {
-        String email = serverRequest.pathVariable("email");
-        return this.userService
+        var email = serverRequest.pathVariable("email");
+        return userService
                 .getUserByEmail(email)
                 .map(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)

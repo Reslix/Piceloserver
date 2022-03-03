@@ -62,26 +62,20 @@ public class ScryerRouterConfiguration {
     public RouterFunction<ServerResponse> tagRoute(final TagHandler tagHandler) {
         var getTagPredicate = RequestPredicates.GET("/api/tag/{tagName}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var postTagPredicate = RequestPredicates.POST("/api/tag")
+        var updateTagImageSrcsPredicate = RequestPredicates.PUT("/api/image/tag/{tag}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var deleteTagsPredicate = RequestPredicates.DELETE("/api/tag")
+        var updateImageSrcTagsPredicate = RequestPredicates.PUT("/api/tag/image/{imageId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var updateTagsForFolderPredicate = RequestPredicates.PUT("/api/tag/folder/{folderId}")
+        var deleteImageSrcTagsPredicate = RequestPredicates.DELETE("/api/image/tag/")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var updateTagsForImageSrcPredicate = RequestPredicates.PUT("/api/tag/image/{imageId}")
-                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var deleteTagsFromFolderPredicate = RequestPredicates.DELETE("/api/tag/folder/{folderId}")
-                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var deleteTagsFromImageSrcPredicate = RequestPredicates.DELETE("/api/tag/imageSrc/{folderId}")
+        var  deleteTagImageSrcsPredicate = RequestPredicates.DELETE("/api/tag/image")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
 
         return RouterFunctions.route(getTagPredicate, tagHandler::getTagByName)
-                .andRoute(postTagPredicate, tagHandler::postNewTags)
-                .andRoute(deleteTagsPredicate, tagHandler::deleteTags)
-                .andRoute(updateTagsForFolderPredicate, tagHandler::updateTagsForFolder)
-                .andRoute(updateTagsForImageSrcPredicate, tagHandler::updateTagsForImageSrc)
-                .andRoute(deleteTagsFromFolderPredicate, tagHandler::deleteTagsFromFolder)
-                .andRoute(deleteTagsFromImageSrcPredicate, tagHandler::deleteTagsFromImageSrc)
+                .andRoute(updateTagImageSrcsPredicate, tagHandler::updateTagImageSrcs)
+                .andRoute(updateImageSrcTagsPredicate, tagHandler::updateImageSrcTags)
+                .andRoute(deleteImageSrcTagsPredicate, tagHandler::deleteImageSrcTags)
+                .andRoute(deleteTagImageSrcsPredicate, tagHandler::deleteTagImageSrcs)
                 .filter(routeMetricsFilter);
     }
 
