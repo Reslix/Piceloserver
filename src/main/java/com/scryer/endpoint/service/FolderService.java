@@ -52,7 +52,6 @@ public class FolderService {
                 .folders(List.of())
                 .parentFolderIds(request.parentFolderIds)
                 .source(new BaseIdentifier("origin", "self"))
-                .tags(List.of())
                 .build();
         var enhancedRequest = PutItemEnhancedRequest.builder(FolderModel.class).item(newFolder).build();
         return Mono.fromCallable(() -> {
