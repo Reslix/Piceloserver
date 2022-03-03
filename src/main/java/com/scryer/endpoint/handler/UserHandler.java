@@ -70,39 +70,29 @@ public class UserHandler {
     }
 
     public Mono<ServerResponse> postNewUser(final ServerRequest serverRequest) {
-        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
-                .map(JWTManager.UserIdentity::username);
+        var requestRecord = serverRequest.bodyToMono(UserService.NewUserRequest.class).cache();
 
-        var requestRecord = serverRequest.bodyToMono(UserService.NewUserRequest.class);
-
-        var validRecord = usernameMono.then(requestRecord.filter(this::validateNewUserRequest));
+        var validRecord = requestRecord.filterWhen(userService::validateUser);
 
         return validRecord.flatMap(record -> {
-            var validUserId = userService.getUniqueId(record.username(), record.email())
-                    .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to generate user ID")));
+            var validUserId = userService.getUniqueId(record.username(), record.email());
 
             var folderMono = validUserId
                     .map(UserModel::getId)
-                    .flatMap(folderService::createRootFolder)
-                    .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to receive folder")));
+                    .flatMap(folderService::createRootFolder);
 
-            var folderIdMono = folderMono.map(FolderModel::getId)
-                    .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to extract folder ID")));
+            var folderIdMono = folderMono.map(FolderModel::getId);
 
             var userMono = Mono.zip(validUserId, folderIdMono)
-                    .flatMap(data -> userService.addUser(record, data.getT1().getId(), data.getT2()))
-                    .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to create user table")));
+                    .flatMap(data -> userService.addUser(record, data.getT1().getId(), data.getT2()));
 
             return userMono.flatMap(userModel -> {
-                var userSecurityMono = userSecurityService.addUserSecurity(record, userModel.getId())
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("User credentials already set")));
+                var userSecurityMono = userSecurityService.addUserSecurity(record, userModel.getId());
                 return userSecurityMono.flatMap(mono -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(BodyInserters.fromValue(userModel))
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Error creating user")))
-                );
+                        .body(BodyInserters.fromValue(userModel)));
             });
-        }).switchIfEmpty(Mono.error(new IllegalArgumentException("Username already taken")));
+        }).switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).build());
     }
 
     public Mono<ServerResponse> updateUser(final ServerRequest serverRequest) {
@@ -116,15 +106,5 @@ public class UserHandler {
                                 .body(BodyInserters.fromValue(userModel)))
                         .switchIfEmpty(ServerResponse.status(HttpStatus.NOT_ACCEPTABLE).build()))
                 .switchIfEmpty(ServerResponse.status(HttpStatus.FORBIDDEN).build());
-    }
-
-    private boolean validateNewUserRequest(final UserService.NewUserRequest newUser) {
-        return !newUser.username().isEmpty()
-               && !newUser.email().isEmpty()
-               && !newUser.displayName().isEmpty()
-               && !newUser.password().isEmpty()
-               && !newUser.firstName().isEmpty()
-               && !newUser.lastName().isEmpty()
-               && userService.getUserByUsername(newUser.username()).block() == null;
     }
 }

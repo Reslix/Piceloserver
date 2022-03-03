@@ -14,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class UserService {
@@ -124,6 +125,15 @@ public class UserService {
                                                                       .item(userModel)
                                                                       .build()))
                 .then(Mono.justOrEmpty(userTable.getItem(Key.builder().partitionValue(username).build())));
+    }
+
+    public Mono<Boolean> validateUser(final NewUserRequest newUserRequest) {
+        return Mono.just(newUserRequest).filter(newUser -> !newUser.username().isEmpty()
+                                   && !newUser.email().isEmpty()
+                                   && !newUser.password().isEmpty())
+                .flatMap(newUser -> getUserByUsername(newUser.username()))
+                .map(Objects::isNull)
+                .defaultIfEmpty(true);
     }
 
     public record NewUserRequest(String username,
