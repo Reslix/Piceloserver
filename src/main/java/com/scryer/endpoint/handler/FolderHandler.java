@@ -30,7 +30,6 @@ public class FolderHandler {
 
     public Mono<ServerResponse> getFolderMapByUserId(final ServerRequest serverRequest) {
         String userId = serverRequest.pathVariable("userId");
-        System.out.println("user1:" + userId);
         return folderService.getFoldersMapByUserId(userId).flatMap(folderMap -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(folderMap)));

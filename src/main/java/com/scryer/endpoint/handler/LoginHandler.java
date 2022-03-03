@@ -86,9 +86,8 @@ public class LoginHandler {
      * @return
      */
     public Mono<ServerResponse> logout(final ServerRequest serverRequest) {
-        System.out.println("1");
         var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
-                .map(JWTManager.UserId::username);
+                .map(JWTManager.UserIdentity::username);
         return usernameMono.flatMap(reactiveUserDetailsService::findByUsername)
                 .map(userDetails -> {
                     cacheManager.getCache("logout").put(userDetails.getUsername(), true);

@@ -38,7 +38,7 @@ public class ImageHandler {
     }
 
     //Get imagesrc by folder
-    //Upload image
+    //Upload imageIds
     //Delete images
     public Mono<ServerResponse> getImagesByFolder(final ServerRequest serverRequest) {
         String folderId = serverRequest.pathVariable("folderId");
@@ -50,7 +50,7 @@ public class ImageHandler {
 
     public Mono<ServerResponse> postImage(final ServerRequest serverRequest) {
         var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
-                .map(JWTManager.UserId::id);
+                .map(JWTManager.UserIdentity::id);
         return usernameMono.flatMap(userId -> {
             var multivalueMono = serverRequest.multipartData().map(MultiValueMap::toSingleValueMap);
             var typeStringMono = multivalueMono.map(map -> map.get("type").content())
@@ -78,7 +78,7 @@ public class ImageHandler {
                     .zipWith(typeStringMono)
                     .flatMap(tuple -> imageResizeService.getThumbnailImage(tuple.getT1(), tuple.getT2()));
 
-            // get the image IDs for both images - reserve their spots in the table.
+            // get the imageIds IDs for both images - reserve their spots in the table.
             var thumbnailIdMono = imageService.getUniqueId()
                     .map(id -> ImageSrcModel.builder().id(id).build())
                     .flatMap(imageService::addImageSrc).map(ImageSrcModel::getId);
@@ -100,7 +100,7 @@ public class ImageHandler {
                                 .map(imageService::deleteImageSrc);
                     });
 
-            // get imageSrc for both
+            // get imageId for both
             var thumbnailSrcMono = Mono.zip(thumbnailIdMono,
                                             nameStringMono,
                                             typeStringMono,
@@ -119,7 +119,7 @@ public class ImageHandler {
                     // For whatever reason method reference does not work
                     .flatMap(imageSrc -> imageService.updateImageSrc(imageSrc));
 
-            // return thumbnail imageSrc
+            // return thumbnail imageId
             // fullImageSrcMono.then(..) leads to fullImageSrcMono not running so I probably don't understand it at all
             return thumbnailSrcMono.flatMap(imageSrc -> ServerResponse.ok()
                             .contentType(MediaType.APPLICATION_JSON)
@@ -155,6 +155,7 @@ public class ImageHandler {
                                  .parentFolderId(folderId)
                                  .alternateSizes(Map.of(alternateSize, new BaseIdentifier("url", alternateSource)))
                                  .imageRankings(List.of())
+                                 .tags(List.of())
                                  .build());
 
     }

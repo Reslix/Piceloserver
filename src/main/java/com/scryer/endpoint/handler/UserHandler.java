@@ -71,7 +71,7 @@ public class UserHandler {
 
     public Mono<ServerResponse> postNewUser(final ServerRequest serverRequest) {
         var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
-                .map(JWTManager.UserId::username);
+                .map(JWTManager.UserIdentity::username);
 
         var requestRecord = serverRequest.bodyToMono(UserService.NewUserRequest.class);
 
@@ -81,10 +81,8 @@ public class UserHandler {
             var validUserId = userService.getUniqueId(record.username(), record.email())
                     .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to generate user ID")));
 
-            var folderMono = validUserId.filter(id -> {
-                        System.out.println("user3:" + id);
-                        return true;
-                    }).map(UserModel::getId)
+            var folderMono = validUserId
+                    .map(UserModel::getId)
                     .flatMap(folderService::createRootFolder)
                     .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to receive folder")));
 
@@ -92,32 +90,24 @@ public class UserHandler {
                     .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to extract folder ID")));
 
             var userMono = Mono.zip(validUserId, folderIdMono)
-                    .flatMap(data -> {
-                        System.out.println("user2:" + data.getT1());
-                        return userService.addUser(record, data.getT1().getId(), data.getT2());
-                    })
+                    .flatMap(data -> userService.addUser(record, data.getT1().getId(), data.getT2()))
                     .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to create user table")));
 
             return userMono.flatMap(userModel -> {
                 var userSecurityMono = userSecurityService.addUserSecurity(record, userModel.getId())
                         .switchIfEmpty(Mono.error(new IllegalArgumentException("User credentials already set")));
-
-                System.out.println("should be creating:" + userModel.toString());
-
-                return userSecurityMono.flatMap(mono -> {
-                    System.out.println("securityMono:" + mono);
-                    return ServerResponse.ok()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(BodyInserters.fromValue(userModel))
-                            .switchIfEmpty(Mono.error(new IllegalArgumentException("Error creating user")));
-                });
+                return userSecurityMono.flatMap(mono -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(userModel))
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Error creating user")))
+                );
             });
         }).switchIfEmpty(Mono.error(new IllegalArgumentException("Username already taken")));
     }
 
     public Mono<ServerResponse> updateUser(final ServerRequest serverRequest) {
         var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
-                .map(JWTManager.UserId::username);
+                .map(JWTManager.UserIdentity::username);
         return usernameMono.flatMap(username -> serverRequest.bodyToMono(UserModel.class)
                         .filter(userModel -> username.equals(userModel.getUsername()))
                         .flatMap(userService::updateUser)
