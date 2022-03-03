@@ -1,6 +1,7 @@
 package com.scryer.endpoint.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,13 +28,15 @@ public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         var usernameMono = Mono.just(authentication.getPrincipal().toString());
-        return usernameMono.filter(username -> !(Boolean) Optional.of(cacheManager.getCache("logout"))
+        return usernameMono.filter(username -> !(Boolean) Optional.ofNullable(cacheManager.getCache("logout"))
                         .map(cache -> cache.get(username))
-                        .map(user -> user.get())
+                        .map(Cache.ValueWrapper::get)
                         .orElse(false))
-                .flatMap(username -> reactiveUserDetailsService.findByUsername(username))
+                .flatMap(reactiveUserDetailsService::findByUsername)
                 .map(userDetails -> new UsernamePasswordAuthenticationToken(userDetails.getUsername(),
                                                                             userDetails.getUsername(),
-                                                                            userDetails.getAuthorities()));
+                                                                            userDetails.getAuthorities()))
+                .cast(Authentication.class)
+                .onErrorReturn(authentication);
     }
 }
