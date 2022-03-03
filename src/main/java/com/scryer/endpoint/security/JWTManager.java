@@ -55,11 +55,11 @@ public class JWTManager {
                 .compact();
     }
 
-    public UserId getUserIdentity(final ServerRequest request) {
+    public UserIdentity getUserIdentity(final ServerRequest request) {
         try {
             var accessTokenCookie = request.cookies().toSingleValueMap().get("accessToken").getValue();
             var jws = validateJwt(accessTokenCookie);
-            return new UserId(jws.getBody().getSubject(), jws.getBody().get(Claims.ID).toString());
+            return new UserIdentity(jws.getBody().getSubject(), jws.getBody().get(Claims.ID).toString());
         } catch (NullPointerException | MalformedJwtException e) {
             return null;
         }
@@ -71,7 +71,7 @@ public class JWTManager {
                 .parseClaimsJws(jwt);
     }
 
-    public record UserId(String username, String id) {
+    public record UserIdentity(String username, String id) {
     }
 
     private KeyPair getKeyPair(final String keystorePassword) {

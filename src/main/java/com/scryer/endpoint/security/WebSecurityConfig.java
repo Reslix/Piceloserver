@@ -64,7 +64,6 @@ public class WebSecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChainAuth(final ServerHttpSecurity http,
                                                              final CorsConfigurationSource source,
-                                                             final AuthenticationWebFilter authenticationWebFilter,
                                                              final ReactiveAuthenticationManager authenticationManager) {
         return http
                 .securityMatcher(new PathPatternParserServerWebExchangeMatcher("/auth/**"))
@@ -95,7 +94,9 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChainAPI(final ServerHttpSecurity http,
-                                                            final CorsConfigurationSource source) {
+                                                            final CorsConfigurationSource source,
+                                                            final JWTAuthenticationManager jwtAuthenticationManager,
+                                                            final JWTSecurityContextRepository jwtSecurityContextRepository) {
         return http
                 .securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/**"))
                 .cors().configurationSource(source).and()
@@ -105,11 +106,9 @@ public class WebSecurityConfig {
                 .exceptionHandling(exceptionHandlingSpec -> {
                     exceptionHandlingSpec
                             .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                                System.out.println("unauthorized");
                                 serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                             }))
                             .accessDeniedHandler((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                                System.out.println("forbidden");
                                 serverWebExchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                             }));
                 })

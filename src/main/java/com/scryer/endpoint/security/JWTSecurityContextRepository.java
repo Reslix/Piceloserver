@@ -4,7 +4,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.security.SignatureException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.ResponseCookie;
@@ -23,18 +22,17 @@ import java.util.Objects;
 @Component
 public class JWTSecurityContextRepository implements ServerSecurityContextRepository {
 
-    @Autowired
-    private JWTAuthenticationManager apiAuthenticationProvider;
+    private final JWTAuthenticationManager apiAuthenticationProvider;
+    private final JWTManager jwtManager;
+    private final String cookieDomain;
 
-    @Autowired
-    private CacheManager cacheManager;
-
-    @Autowired
-    private String cookieDomain;
-
-    @Autowired
-    private JWTManager jwtManager;
-
+    public JWTSecurityContextRepository(final JWTAuthenticationManager apiAuthenticationProvider,
+                                        final JWTManager jwtManager,
+                                        final String cookieDomain) {
+        this.apiAuthenticationProvider = apiAuthenticationProvider;
+        this.jwtManager = jwtManager;
+        this.cookieDomain = cookieDomain;
+    }
 
     /**
      * We want to obtain a new security context per request so no need to save.
@@ -58,10 +56,6 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
     @Override
     public Mono<SecurityContext> load(ServerWebExchange exchange) {
         ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication).map(Objects::toString);
-        System.out.println("------------------ entered security context --------------------");
-        System.out.println(exchange.getRequest().getQueryParams());
-        System.out.println(exchange.getRequest().getCookies().toSingleValueMap());
-        System.out.println(exchange.getRequest().getHeaders());
         if (exchange.getRequest().getCookies().containsKey("accessToken") &&
             exchange.getRequest().getCookies().containsKey("refreshToken")) {
             ServerHttpRequest httpRequest = exchange.getRequest();
@@ -82,15 +76,15 @@ public class JWTSecurityContextRepository implements ServerSecurityContextReposi
                     HttpCookie refreshCookie = httpRequest.getCookies().toSingleValueMap().get("refreshToken");
                     Jws<Claims> refreshToken = jwtManager.validateJwt(refreshCookie.getValue());
                     var newAccessString = jwtManager.createJwtAccess(refreshToken.getBody()
-                                                                            .getSubject(),
-                                                                    refreshToken.getBody()
-                                                                            .get(Claims.ID)
-                                                                            .toString());
+                                                                             .getSubject(),
+                                                                     refreshToken.getBody()
+                                                                             .get(Claims.ID)
+                                                                             .toString());
                     var newRefreshString = jwtManager.createJwtRefresh(refreshToken.getBody()
-                                                                              .getSubject(),
-                                                                      refreshToken.getBody()
-                                                                              .get(Claims.ID)
-                                                                              .toString());
+                                                                               .getSubject(),
+                                                                       refreshToken.getBody()
+                                                                               .get(Claims.ID)
+                                                                               .toString());
                     var newAccessCookie = ResponseCookie.from("accessToken", newAccessString)
                             .domain(cookieDomain)
                             .httpOnly(true)

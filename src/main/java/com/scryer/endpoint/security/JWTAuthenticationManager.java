@@ -14,10 +14,8 @@ import java.util.Optional;
 @Component
 public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
 
-    @Autowired
-    private CacheManager cacheManager;
-    @Autowired
-    private ReactiveUserDetailsService reactiveUserDetailsService;
+    private final CacheManager cacheManager;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
     @Autowired
     public JWTAuthenticationManager(final CacheManager cacheManager,
@@ -28,9 +26,6 @@ public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
-        System.out.println("------------------ entered authentication manager --------------------");
-        System.out.println(authentication.getPrincipal());
-        System.out.println(authentication.getCredentials());
         var usernameMono = Mono.just(authentication.getPrincipal().toString());
         return usernameMono.filter(username -> !(Boolean) Optional.of(cacheManager.getCache("logout"))
                         .map(cache -> cache.get(username))
