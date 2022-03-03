@@ -14,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +92,24 @@ public class FolderService {
                                                         .item(folder)
                                                         .ignoreNulls(true)
                                                         .build()));
+    }
+
+    public Mono<FolderModel> addChildToParent(final FolderModel child) {
+        var parentId = child.getParentFolderIds().get(child.getParentFolderIds().size() - 1);
+        var parentMono = getFolderById(parentId).cache();
+        return Mono.zip(parentMono, parentMono.map(FolderModel::getFolders),
+                        (parent, folders) -> {
+                            var newFolders = new ArrayList<>(folders);
+                            newFolders.add(child.getId());
+                            return folderTable.updateItem(UpdateItemEnhancedRequest.builder(FolderModel.class)
+                                                                  .item(FolderModel.builder()
+                                                                                .id(parentId)
+                                                                                .folders(newFolders)
+                                                                                .build())
+                                                                  .ignoreNulls(true)
+                                                                  .build());
+
+                        });
     }
 
 

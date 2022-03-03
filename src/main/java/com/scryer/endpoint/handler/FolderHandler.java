@@ -36,14 +36,15 @@ public class FolderHandler {
     }
 
     public Mono<ServerResponse> postNewFolder(final ServerRequest serverRequest) {
-        return serverRequest.bodyToMono(FolderService.NewFolderRequest.class)
+        var newFolder = serverRequest.bodyToMono(FolderService.NewFolderRequest.class)
                 .filter(folder -> jwtManager.getUserIdentity(serverRequest).id().equals(folder.userId()))
-                .flatMap(folderService::createFolder)
-                .map(folderModel -> ServerResponse.ok()
+                .flatMap(folderService::createFolder).cache();
+        var updatedParent = newFolder.flatMap(folderService::addChildToParent);
+
+        return updatedParent.then(newFolder).map(folderModel -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))
                 .defaultIfEmpty(ServerResponse.badRequest()
-
                                         .contentType(MediaType.TEXT_PLAIN)
                                         .body(BodyInserters.fromValue("Operation for wrong user")))
                 .flatMap(response -> response);
@@ -58,7 +59,6 @@ public class FolderHandler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))
                 .defaultIfEmpty(ServerResponse.badRequest()
-
                                         .contentType(MediaType.TEXT_PLAIN)
                                         .body(BodyInserters.fromValue("Operation for wrong user")))
                 .flatMap(response -> response);
@@ -73,7 +73,6 @@ public class FolderHandler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))
                 .defaultIfEmpty(ServerResponse.badRequest()
-
                                         .contentType(MediaType.TEXT_PLAIN)
                                         .body(BodyInserters.fromValue("Operation for wrong user")))
                 .flatMap(response -> response);
