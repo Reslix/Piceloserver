@@ -19,7 +19,6 @@ public final class TagModel implements DynamoDBTableModel, HasId {
     private final String userId;
     private final String name;
     private final List<String> imageIds;
-    private final List<String> folderIds;
     private final List<String> imageRankingIds;
 
     @DynamoDbPartitionKey
@@ -28,11 +27,13 @@ public final class TagModel implements DynamoDBTableModel, HasId {
     }
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
+    @DynamoDbSecondarySortKey(indexNames = {"tag_index"})
     public String getUserId() {
         return this.userId;
     }
 
     @DynamoDbSecondaryPartitionKey(indexNames = {"tag_index"})
+    @DynamoDbSecondarySortKey(indexNames = {"user_index"})
     public String getName() {
         return this.name;
     }

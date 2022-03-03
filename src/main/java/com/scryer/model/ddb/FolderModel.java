@@ -12,14 +12,13 @@ import java.util.List;
 @Builder
 @ToString
 @DynamoDbImmutable(builder = FolderModel.FolderModelBuilder.class)
-public final class FolderModel implements DynamoDBTableModel, HasId, HasTags {
+public final class FolderModel implements DynamoDBTableModel, HasId {
     private final String id;
     private final String userId;
     private final BaseIdentifier source;
     private final String name;
     private final Long createDate;
     private final Long lastModified;
-    private final List<String> tags;
     private final List<String> folders;
     private final List<String> parentFolderIds;
 
