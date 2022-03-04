@@ -54,6 +54,7 @@ dependencies {
     // or 'io.jsonwebtoken:jjwt-gson:0.11.2' for gson	implementation 'software.amazon.awssdk:dynamodb'
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:s3'
+    implementation 'org.openpnp:opencv'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
