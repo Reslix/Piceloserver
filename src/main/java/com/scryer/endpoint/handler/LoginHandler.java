@@ -2,10 +2,9 @@ package com.scryer.endpoint.handler;
 
 import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.ReactiveUserDetailsService;
-import com.scryer.model.ddb.UserSecurityModel;
+import com.scryer.model.ddb.UserAccessModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.server.Cookie;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -45,7 +44,7 @@ public class LoginHandler {
                 .map(Authentication::getCredentials)
                 .cast(String.class)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Could not get password from context")));
-        Mono<UserSecurityModel> userMono =
+        Mono<UserAccessModel> userMono =
                 usernameMono.flatMap(reactiveUserDetailsService::getUser);
 
         return usernameMono

@@ -2,7 +2,7 @@ package com.scryer.endpoint.handler;
 
 import com.scryer.endpoint.EndpointApplication;
 import com.scryer.endpoint.security.WebSecurityConfig;
-import com.scryer.model.ddb.UserSecurityModel;
+import com.scryer.model.ddb.UserAccessModel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -41,11 +41,11 @@ public class LoginHandlerTests {
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     @MockBean
-    private DynamoDbTable<UserSecurityModel> userSecurityModelTable;
+    private DynamoDbTable<UserAccessModel> userSecurityModelTable;
 
     @Test
     void testLogin() {
-        UserSecurityModel userSecurityModel = UserSecurityModel.builder()
+        UserAccessModel userAccessModel = UserAccessModel.builder()
                 .username("test")
                 .password(passwordEncoder.encode("test"))
                 .authorities(List.of(new SimpleGrantedAuthority("user")))
@@ -55,7 +55,7 @@ public class LoginHandlerTests {
                 .credentialsNonExpired(true)
                 .build();
         when(userSecurityModelTable.getItem(any(Key.class)))
-                .thenReturn(userSecurityModel);
+                .thenReturn(userAccessModel);
 
         MultiValueMap<String, ResponseCookie> cookies =
                 webTestClient.post()

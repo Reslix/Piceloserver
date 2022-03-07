@@ -5,7 +5,7 @@ import com.scryer.model.ddb.ImageRankingsModel;
 import com.scryer.model.ddb.ImageSrcModel;
 import com.scryer.model.ddb.TagModel;
 import com.scryer.model.ddb.UserModel;
-import com.scryer.model.ddb.UserSecurityModel;
+import com.scryer.model.ddb.UserAccessModel;
 import com.scryer.util.TableInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -97,7 +97,7 @@ public class DynamoDBTableConfiguration {
     }
 
     @Bean
-    public DynamoDbTable<UserSecurityModel> userSecurityTable(final DynamoDbEnhancedClient client) {
+    public DynamoDbTable<UserAccessModel> userAccessTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
                 .indexName("userId_index")
@@ -111,6 +111,6 @@ public class DynamoDBTableConfiguration {
         var request = CreateTableEnhancedRequest.builder()
                 .globalSecondaryIndices(userIdIndex, emailIndex)
                 .build();
-        return TableInitializer.getOrCreateTable(client, UserSecurityModel.class, request);
+        return TableInitializer.getOrCreateTable(client, UserAccessModel.class, request);
     }
 }

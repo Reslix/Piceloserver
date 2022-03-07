@@ -1,6 +1,6 @@
 package com.scryer.endpoint.service;
 
-import com.scryer.model.ddb.UserSecurityModel;
+import com.scryer.model.ddb.UserAccessModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,11 +21,11 @@ import java.util.List;
 @Service
 public class ReactiveUserDetailsService implements org.springframework.security.core.userdetails.ReactiveUserDetailsService {
 
-    private final DynamoDbTable<UserSecurityModel> userSecurityTable;
+    private final DynamoDbTable<UserAccessModel> userSecurityTable;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public ReactiveUserDetailsService(final DynamoDbTable<UserSecurityModel> userSecurityTable) {
+    public ReactiveUserDetailsService(final DynamoDbTable<UserAccessModel> userSecurityTable) {
         this.userSecurityTable = userSecurityTable;
         this.passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
@@ -39,11 +39,11 @@ public class ReactiveUserDetailsService implements org.springframework.security.
                 .switchIfEmpty(Mono.error(new UsernameNotFoundException(username)));
     }
 
-    public Mono<UserSecurityModel> getUser(final String username) {
+    public Mono<UserAccessModel> getUser(final String username) {
         return Mono.justOrEmpty(this.userSecurityTable.getItem(Key.builder().partitionValue(username).build()));
     }
 
-    public Mono<UserSecurityModel> getUserByEmail(final String email) {
+    public Mono<UserAccessModel> getUserByEmail(final String email) {
         var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(email).build());
         var queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
@@ -57,8 +57,8 @@ public class ReactiveUserDetailsService implements org.springframework.security.
 
     }
 
-    public Mono<UserSecurityModel> addUserSecurity(final UserService.NewUserRequest request, final String id) {
-        var userSecurityModel = UserSecurityModel.builder()
+    public Mono<UserAccessModel> addUserSecurity(final UserService.NewUserRequest request, final String id) {
+        var userSecurityModel = UserAccessModel.builder()
                 .username(request.username())
                 .email(request.email())
                 .id(id)
@@ -69,7 +69,7 @@ public class ReactiveUserDetailsService implements org.springframework.security.
                 .accountNonLocked(true)
                 .authorities(List.of(new SimpleGrantedAuthority("user")))
                 .build();
-        var enhancedRequest = PutItemEnhancedRequest.builder(UserSecurityModel.class).item(userSecurityModel).build();
+        var enhancedRequest = PutItemEnhancedRequest.builder(UserAccessModel.class).item(userSecurityModel).build();
         return Mono.fromCallable(() -> {
             userSecurityTable.putItemWithResponse(enhancedRequest);
             return userSecurityTable.getItem(Key.builder().partitionValue(request.username()).build());

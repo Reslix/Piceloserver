@@ -9,13 +9,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.util.Collection;
-import java.util.List;
 
 @Getter
 @Builder
 @ToString
-@DynamoDbImmutable(builder = UserSecurityModel.UserSecurityModelBuilder.class)
-public class UserSecurityModel implements DynamoDBTableModel, UserDetails, HasId {
+@DynamoDbImmutable(builder = UserAccessModel.UserAccessModelBuilder.class)
+public class UserAccessModel implements DynamoDBTableModel, UserDetails, HasId {
     private final String id;
     private final String username;
     private final String email;
