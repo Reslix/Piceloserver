@@ -1,13 +1,12 @@
 package com.scryer.endpoint.handler;
 
 import com.scryer.endpoint.security.JWTManager;
-import com.scryer.endpoint.service.ReactiveUserDetailsService;
+import com.scryer.endpoint.service.ReactiveUserAccessService;
 import com.scryer.model.ddb.UserAccessModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.server.Cookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
@@ -20,15 +19,15 @@ import java.security.Principal;
 @Service
 public class LoginHandler {
 
-    private final ReactiveUserDetailsService reactiveUserDetailsService;
+    private final ReactiveUserAccessService reactiveUserAccessService;
     private final JWTManager jwtManager;
     private final String cookieDomain;
 
     @Autowired
-    public LoginHandler(final ReactiveUserDetailsService reactiveUserDetailsService,
+    public LoginHandler(final ReactiveUserAccessService reactiveUserAccessService,
                         final JWTManager jwtManager,
                         final String cookieDomain) {
-        this.reactiveUserDetailsService = reactiveUserDetailsService;
+        this.reactiveUserAccessService = reactiveUserAccessService;
         this.jwtManager = jwtManager;
         this.cookieDomain = cookieDomain;
     }
@@ -39,16 +38,19 @@ public class LoginHandler {
                 .map(Principal::getName)
                 .map(String::toLowerCase)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Could not get username from context")));
-        Mono<String> passwordMono = ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .map(Authentication::getCredentials)
-                .cast(String.class)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Could not get password from context")));
         Mono<UserAccessModel> userMono =
-                usernameMono.flatMap(reactiveUserDetailsService::getUser);
+                usernameMono.flatMap(reactiveUserAccessService::getUser);
 
         return usernameMono
                 .then(userMono)
+                .flatMap(user -> reactiveUserAccessService.updateUserAccess(UserAccessModel.builder()
+                                                                                    .username(user.getUsername())
+                                                                                    .credentialsNonExpired(user.isCredentialsNonExpired())
+                                                                                    .accountNonExpired(user.isAccountNonExpired())
+                                                                                    .accountNonLocked(user.isAccountNonLocked())
+                                                                                    .enabled(user.isEnabled())
+                                                                                    .accountLoggedIn(true)
+                                                                                    .build()))
                 .flatMap(user -> ServerResponse.ok()
                         .cookie(ResponseCookie.from("accessToken",
                                                     jwtManager.createJwtAccess(user.getUsername(),
@@ -72,7 +74,19 @@ public class LoginHandler {
     public Mono<ServerResponse> logout(final ServerRequest serverRequest) {
         var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserIdentity::username);
-        return usernameMono.flatMap(reactiveUserDetailsService::findByUsername)
+        var userAccessMono = usernameMono.flatMap(reactiveUserAccessService::findByUsername).cache();
+        var logoutMono =
+                userAccessMono.map(user -> reactiveUserAccessService.updateUserAccess(UserAccessModel.builder()
+                                                                                              .username(user.getUsername())
+                                                                                              .credentialsNonExpired(user.isCredentialsNonExpired())
+                                                                                              .accountNonExpired(user.isAccountNonExpired())
+                                                                                              .accountNonLocked(user.isAccountNonLocked())
+                                                                                              .enabled(user.isEnabled())
+                                                                                              .accountLoggedIn(false)
+                                                                                              .build()));
+        return logoutMono
+                .then(usernameMono)
+                .flatMap(reactiveUserAccessService::findByUsername)
                 .flatMap(userDetails -> ServerResponse.ok().cookie(ResponseCookie.from("accessToken", "").build())
                         .cookie(ResponseCookie.from("refreshToken", "").build()).build());
     }

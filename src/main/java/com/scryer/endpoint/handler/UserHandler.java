@@ -2,7 +2,7 @@ package com.scryer.endpoint.handler;
 
 import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.FolderService;
-import com.scryer.endpoint.service.ReactiveUserDetailsService;
+import com.scryer.endpoint.service.ReactiveUserAccessService;
 import com.scryer.endpoint.service.UserService;
 import com.scryer.model.ddb.FolderModel;
 import com.scryer.model.ddb.UserModel;
@@ -20,13 +20,13 @@ import reactor.core.publisher.Mono;
 public class UserHandler {
 
     private final UserService userService;
-    private final ReactiveUserDetailsService userSecurityService;
+    private final ReactiveUserAccessService userSecurityService;
     private final FolderService folderService;
     private final JWTManager jwtManager;
 
     @Autowired
     public UserHandler(final UserService userService,
-                       final ReactiveUserDetailsService userSecurityService,
+                       final ReactiveUserAccessService userSecurityService,
                        final FolderService folderService,
                        final JWTManager jwtManager) {
         this.userService = userService;

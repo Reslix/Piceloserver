@@ -19,6 +19,7 @@ public class UserAccessModel implements DynamoDBTableModel, UserDetails, HasId {
     private final String username;
     private final String email;
     private final String password;
+    private final boolean accountLoggedIn;
     private final boolean accountNonExpired;
     private final boolean accountNonLocked;
     private final boolean credentialsNonExpired;

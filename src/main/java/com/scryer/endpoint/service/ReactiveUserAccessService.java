@@ -2,10 +2,9 @@ package com.scryer.endpoint.service;
 
 import com.scryer.model.ddb.UserAccessModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,28 +14,27 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 import java.util.List;
 
 @Service
-public class ReactiveUserDetailsService implements org.springframework.security.core.userdetails.ReactiveUserDetailsService {
+public class ReactiveUserAccessService implements ReactiveUserDetailsService {
 
     private final DynamoDbTable<UserAccessModel> userSecurityTable;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public ReactiveUserDetailsService(final DynamoDbTable<UserAccessModel> userSecurityTable) {
+    public ReactiveUserAccessService(final DynamoDbTable<UserAccessModel> userSecurityTable) {
         this.userSecurityTable = userSecurityTable;
         this.passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    @Cacheable("userSecurity")
     @Override
     public Mono<UserDetails> findByUsername(final String username) {
         return getUser(username).switchIfEmpty(Mono.just(username).filter(name -> name.contains("@")).
                                                                 flatMap(this::getUserByEmail))
-                .cast(UserDetails.class)
-                .switchIfEmpty(Mono.error(new UsernameNotFoundException(username)));
+                .cast(UserDetails.class);
     }
 
     public Mono<UserAccessModel> getUser(final String username) {
@@ -67,6 +65,7 @@ public class ReactiveUserDetailsService implements org.springframework.security.
                 .credentialsNonExpired(true)
                 .accountNonExpired(true)
                 .accountNonLocked(true)
+                .accountLoggedIn(false)
                 .authorities(List.of(new SimpleGrantedAuthority("user")))
                 .build();
         var enhancedRequest = PutItemEnhancedRequest.builder(UserAccessModel.class).item(userSecurityModel).build();
@@ -74,5 +73,12 @@ public class ReactiveUserDetailsService implements org.springframework.security.
             userSecurityTable.putItemWithResponse(enhancedRequest);
             return userSecurityTable.getItem(Key.builder().partitionValue(request.username()).build());
         });
+    }
+
+    public Mono<UserAccessModel> updateUserAccess(final UserAccessModel user) {
+        return Mono.just(userSecurityTable.updateItem(UpdateItemEnhancedRequest.builder(UserAccessModel.class)
+                                                      .item(user)
+                                                      .ignoreNulls(true)
+                                                      .build()));
     }
 }

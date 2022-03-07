@@ -20,6 +20,7 @@ import org.springframework.util.Base64Utils;
 import org.springframework.util.MultiValueMap;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -35,9 +36,6 @@ public class LoginHandlerTests {
     @Autowired
     private WebTestClient webTestClient;
 
-    @Autowired
-    private CacheManager cacheManager;
-
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     @MockBean
@@ -52,9 +50,12 @@ public class LoginHandlerTests {
                 .accountNonExpired(true)
                 .enabled(true)
                 .accountNonLocked(true)
+                .accountLoggedIn(false)
                 .credentialsNonExpired(true)
                 .build();
         when(userSecurityModelTable.getItem(any(Key.class)))
+                .thenReturn(userAccessModel);
+        when(userSecurityModelTable.updateItem(any(UpdateItemEnhancedRequest.class)))
                 .thenReturn(userAccessModel);
 
         MultiValueMap<String, ResponseCookie> cookies =
@@ -66,8 +67,6 @@ public class LoginHandlerTests {
                         .exchange()
                         .expectStatus().isOk()
                         .returnResult(Object.class).getResponseCookies();
-
-
     }
 
     @Test
@@ -82,6 +81,6 @@ public class LoginHandlerTests {
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
-                .isForbidden();
+                .isUnauthorized();
     }
 }

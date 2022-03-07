@@ -10,8 +10,6 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
-import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
 import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
@@ -34,7 +32,7 @@ public class WebSecurityConfig {
     private ReactiveUserDetailsService reactiveUserDetailsService;
 
     @Bean
-    ReactiveAuthenticationManager authenticationManager() {
+    ReactiveAuthenticationManager authenticationManager(final ReactiveUserDetailsService reactiveUserDetailsService) {
         return new UserDetailsRepositoryReactiveAuthenticationManager(reactiveUserDetailsService);
     }
 
@@ -53,13 +51,6 @@ public class WebSecurityConfig {
         return source;
     }
 
-    @Bean
-    AuthenticationWebFilter authenticationWebFilter(final ReactiveAuthenticationManager authenticationManager,
-                                                    final ReactiveUserDetailsService reactiveUserDetailsService) {
-        AuthenticationWebFilter filter = new AuthenticationWebFilter(authenticationManager);
-        filter.setServerAuthenticationConverter(new ServerHttpBasicAuthenticationConverter());
-        return filter;
-    }
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChainAuth(final ServerHttpSecurity http,
@@ -72,12 +63,14 @@ public class WebSecurityConfig {
                 .formLogin().disable()
                 .httpBasic()
                 .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+                    exception.printStackTrace();
                     serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 })).and()
                 .authenticationManager(authenticationManager)
                 .exceptionHandling(exceptionHandlingSpec -> {
                     exceptionHandlingSpec
                             .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+                               exception.printStackTrace();
                                 serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                             }))
                             .accessDeniedHandler((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
