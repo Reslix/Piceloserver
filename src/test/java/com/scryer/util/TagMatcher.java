@@ -18,7 +18,6 @@ public class TagMatcher implements ArgumentMatcher<TagModel> {
                Objects.equals(left.getName(), right.getName()) &&
                Objects.equals(left.getImageIds(), right.getImageIds()) &&
                Objects.equals(left.getImageRankingIds(), right.getImageRankingIds()) &&
-               Objects.equals(left.getId(), right.getId()) &&
                Objects.equals(left.getUserId(), right.getUserId());
     }
 }
