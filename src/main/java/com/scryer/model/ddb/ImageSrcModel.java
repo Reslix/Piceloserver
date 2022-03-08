@@ -2,6 +2,7 @@ package com.scryer.model.ddb;
 
 import com.scryer.model.ddb.converters.AlternateSizesConverter;
 import com.scryer.model.ddb.converters.BaseIdentifierConverter;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 @Getter
 @Builder
+@AllArgsConstructor
 @DynamoDbImmutable(builder = ImageSrcModel.ImageSrcModelBuilder.class)
 public final class ImageSrcModel implements DynamoDBTableModel, HasId, HasTags {
     private final String id;

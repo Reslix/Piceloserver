@@ -1,6 +1,7 @@
 package com.scryer.model.ddb;
 
 import com.scryer.model.ddb.converters.AuthoritiesConverter;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -13,6 +14,7 @@ import java.util.Collection;
 @Getter
 @Builder
 @ToString
+@AllArgsConstructor
 @DynamoDbImmutable(builder = UserAccessModel.UserAccessModelBuilder.class)
 public class UserAccessModel implements DynamoDBTableModel, UserDetails, HasId {
     private final String id;

@@ -1,8 +1,12 @@
 package com.scryer.model.ddb;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.scryer.model.ddb.converters.BaseIdentifierConverter;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
@@ -11,6 +15,7 @@ import java.util.List;
 @Getter
 @Builder
 @ToString
+@AllArgsConstructor
 @DynamoDbImmutable(builder = FolderModel.FolderModelBuilder.class)
 public final class FolderModel implements DynamoDBTableModel, HasId {
     private final String id;

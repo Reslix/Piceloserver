@@ -1,6 +1,7 @@
 package com.scryer.model.ddb;
 
 import com.scryer.model.ddb.converters.EloConverter;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 @Getter
 @Builder
+@AllArgsConstructor
 @DynamoDbImmutable(builder = ImageRankingsModel.ImageRankingsModelBuilder.class)
 public final class ImageRankingsModel implements DynamoDBTableModel, HasId {
     private final String id;

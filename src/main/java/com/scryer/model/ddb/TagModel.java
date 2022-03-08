@@ -1,5 +1,6 @@
 package com.scryer.model.ddb;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -13,6 +14,7 @@ import java.util.List;
 @Getter
 @Builder
 @ToString
+@AllArgsConstructor
 @DynamoDbImmutable(builder = TagModel.TagModelBuilder.class)
 public final class TagModel implements DynamoDBTableModel, HasId {
     private final String id;
