@@ -7,6 +7,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
 import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
+import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
@@ -41,6 +42,7 @@ public class S3Configuration {
             var createBucketRequest = CreateBucketRequest.builder()
                     .bucket(s3BucketName)
                     .createBucketConfiguration(createBucketConfiguration)
+                    .acl(BucketCannedACL.PUBLIC_READ)
                     .build();
             s3Client.createBucket(createBucketRequest);
             var request = HeadBucketRequest.builder().bucket(s3BucketName).build();
