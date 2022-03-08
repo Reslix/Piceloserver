@@ -3,17 +3,12 @@ package com.scryer.endpoint.handler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scryer.endpoint.EndpointApplication;
+import com.scryer.endpoint.ScryerTestConfiguration;
 import com.scryer.endpoint.security.HandlerTestSecurityConfig;
 import com.scryer.endpoint.security.JWTManager;
-import com.scryer.endpoint.service.ImageService;
-import com.scryer.endpoint.service.TagService;
-import com.scryer.endpoint.service.UserService;
 import com.scryer.model.ddb.ImageSrcModel;
 import com.scryer.model.ddb.TagModel;
 import com.scryer.model.ddb.UserModel;
-import com.scryer.util.ImageSrcMatcher;
-import com.scryer.util.TagMatcher;
-import com.scryer.util.UserMatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -26,33 +21,35 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import reactor.core.publisher.Hooks;
-import reactor.core.publisher.Mono;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@EnableAutoConfiguration
 @SpringBootTest(classes = {EndpointApplication.class, HandlerTestSecurityConfig.class},
                 webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TagHandlerTest {
+
+
     @MockBean
     private JWTManager jwtManager;
 
-    @MockBean
-    private TagService tagService;
+//    @MockBean
+//    private TagService tagService;
+//
+//    @MockBean
+//    private UserService userService;
+//
+//    @MockBean
+//    private ImageService imageService;
 
-    @MockBean
-    private UserService userService;
-
-    @MockBean
-    private ImageService imageService;
+    @Autowired
+    private DynamoDbTable<TagModel> tagTable;
 
     @Autowired
     private TagHandler handler;
@@ -65,7 +62,7 @@ class TagHandlerTest {
     @BeforeEach
     void beforeEach() {
         Hooks.onOperatorDebug();
-        Mockito.clearInvocations(jwtManager, tagService, userService, imageService);
+        Mockito.clearInvocations(jwtManager);//, tagService, userService, imageService);
     }
 
     @Test
@@ -77,8 +74,15 @@ class TagHandlerTest {
                 .id("4")
                 .build();
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
-        when(tagService.getTag("testTag", "1")).thenReturn(Mono.just(result));
+       // when(tagService.getTag("testTag", "1")).thenReturn(Mono.just(result));
         testClient.get().uri("/api/tag/testTag").exchange().expectBody().json(mapper.writeValueAsString(result));
+    }
+
+    @Test
+    void testDB() {
+        tagTable.putItem(PutItemEnhancedRequest.<TagModel>builder(TagModel.class).item(TagModel.builder().id("1").name("one").build()).build());
+        System.out.println(tagTable.scan());
+
     }
 
     @Test
@@ -99,23 +103,23 @@ class TagHandlerTest {
         UserModel user1 = UserModel.builder().username("test").id("1").tags(List.of()).build();
         UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag1")).build();
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
-        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
-        when(userService.addUserTags(argThat(new UserMatcher(user1)),
-                                     argThat(p -> List.of("tag1")
-                                                          .size() == (p.size())))).thenReturn(Mono.just(user2));
-        when(tagService.addNewTag("tag1", "1")).thenReturn(Mono.just(tagBefore));
-        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tagBefore));
-        when(tagService.updateTagImageIds(tagBefore, List.of("image1", "image2", "image3")))
-                .thenReturn(Mono.just(tagAfter));
-        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(image1));
-        when(imageService.getImageSrc("image2")).thenReturn(Mono.just(image2));
-        when(imageService.getImageSrc("image3")).thenReturn(Mono.just(image3));
-        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(image1)), anyList()))
-                .thenReturn(Mono.just(image1Updated));
-        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(image2)), anyList()))
-                .thenReturn(Mono.just(image2Updated));
-        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(image3)), anyList()))
-                .thenReturn(Mono.just(image3Updated));
+//        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
+//        when(userService.addUserTags(argThat(new UserMatcher(user1)),
+//                                     argThat(p -> List.of("tag1")
+//                                                          .size() == (p.size())))).thenReturn(Mono.just(user2));
+//        when(tagService.addNewTag("tag1", "1")).thenReturn(Mono.just(tagBefore));
+//        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tagBefore));
+//        when(tagService.updateTagImageIds(tagBefore, List.of("image1", "image2", "image3")))
+//                .thenReturn(Mono.just(tagAfter));
+//        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(image1));
+//        when(imageService.getImageSrc("image2")).thenReturn(Mono.just(image2));
+//        when(imageService.getImageSrc("image3")).thenReturn(Mono.just(image3));
+//        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(image1)), anyList()))
+//                .thenReturn(Mono.just(image1Updated));
+//        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(image2)), anyList()))
+//                .thenReturn(Mono.just(image2Updated));
+//        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(image3)), anyList()))
+//                .thenReturn(Mono.just(image3Updated));
 
         testClient.put()
                 .uri("/api/image/tag/tag1")
@@ -127,12 +131,12 @@ class TagHandlerTest {
                 .isOk()
                 .expectBody()
                 .json(mapper.writeValueAsString(List.of(image1Updated, image2Updated, image3Updated)));
-        verify(userService, times(1)).getUserByUsername("test");
-        verify(userService, times(1)).addUserTags(any(), any());
-        verify(tagService, times(1)).addNewTag(any(), any());
-        verify(tagService, times(1)).updateTagImageIds(any(), any());
-        verify(imageService, times(3)).getImageSrc(any());
-        verify(imageService, times(3)).addTagsToImageSrc(any(), any());
+//        verify(userService, times(1)).getUserByUsername("test");
+//        verify(userService, times(1)).addUserTags(any(), any());
+//        verify(tagService, times(1)).addNewTag(any(), any());
+//        verify(tagService, times(1)).updateTagImageIds(any(), any());
+//        verify(imageService, times(3)).getImageSrc(any());
+//        verify(imageService, times(3)).addTagsToImageSrc(any(), any());
     }
 
     @Test
@@ -150,25 +154,25 @@ class TagHandlerTest {
         UserModel user1 = UserModel.builder().username("test").id("1").tags(List.of()).build();
         UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag1", "tag2", "tag3")).build();
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
-        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
-        when(userService.addUserTags(argThat(new UserMatcher(user1)),
-                                     argThat(p -> List.of("tag1", "tag2", "tag3").size() == (p.size()))))
-                .thenReturn(Mono.just(user2));
-        when(tagService.addNewTag("tag1", "1")).thenReturn(Mono.just(tag1));
-        when(tagService.addNewTag("tag2", "1")).thenReturn(Mono.just(tag2));
-        when(tagService.addNewTag("tag3", "1")).thenReturn(Mono.just(tag3));
-        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tag1));
-        when(tagService.getTag("tag2", "1")).thenReturn(Mono.just(tag2));
-        when(tagService.getTag("tag3", "1")).thenReturn(Mono.just(tag3));
-        when(tagService.updateTagImageIds(tag1, List.of("image1")))
-                .thenReturn(Mono.just(tag1After));
-        when(tagService.updateTagImageIds(tag2, List.of("image1")))
-                .thenReturn(Mono.just(tag2After));
-        when(tagService.updateTagImageIds(tag3, List.of("image1")))
-                .thenReturn(Mono.just(tag3After));
-        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(imageBefore));
-        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(imageBefore)), anyList()))
-                .thenReturn(Mono.just(imageAfter));
+//        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
+//        when(userService.addUserTags(argThat(new UserMatcher(user1)),
+//                                     argThat(p -> List.of("tag1", "tag2", "tag3").size() == (p.size()))))
+//                .thenReturn(Mono.just(user2));
+//        when(tagService.addNewTag("tag1", "1")).thenReturn(Mono.just(tag1));
+//        when(tagService.addNewTag("tag2", "1")).thenReturn(Mono.just(tag2));
+//        when(tagService.addNewTag("tag3", "1")).thenReturn(Mono.just(tag3));
+//        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tag1));
+//        when(tagService.getTag("tag2", "1")).thenReturn(Mono.just(tag2));
+//        when(tagService.getTag("tag3", "1")).thenReturn(Mono.just(tag3));
+//        when(tagService.updateTagImageIds(tag1, List.of("image1")))
+//                .thenReturn(Mono.just(tag1After));
+//        when(tagService.updateTagImageIds(tag2, List.of("image1")))
+//                .thenReturn(Mono.just(tag2After));
+//        when(tagService.updateTagImageIds(tag3, List.of("image1")))
+//                .thenReturn(Mono.just(tag3After));
+//        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(imageBefore));
+//        when(imageService.addTagsToImageSrc(argThat(new ImageSrcMatcher(imageBefore)), anyList()))
+//                .thenReturn(Mono.just(imageAfter));
 
         testClient.put()
                 .uri("/api/tag/image/image1")
@@ -181,7 +185,7 @@ class TagHandlerTest {
                 .isOk()
                 .expectBody()
                 .json(mapper.writeValueAsString(imageAfter));
-        verify(imageService, times(1)).addTagsToImageSrc(any(), any());
+//        verify(imageService, times(1)).addTagsToImageSrc(any(), any());
     }
 
     @Test
@@ -203,17 +207,17 @@ class TagHandlerTest {
         UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag2")).build();
 
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
-        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
-        when(userService.deleteUserTags(argThat(new UserMatcher(user1)), anyList())).thenReturn(Mono.just(user2));
-
-        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tag1));
-        when(tagService.getTag("tag2", "1")).thenReturn(Mono.just(tag2));
-        when(tagService.getTag("tag3", "1")).thenReturn(Mono.just(tag3));
-        when(tagService.deleteTagImages(tag1, List.of("image1"))).thenReturn(Mono.just(tag1After));
-        when(tagService.deleteTagImages(tag3, List.of("image1"))).thenReturn(Mono.just(tag3After));
-        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(imageBefore));
-        when(imageService.deleteImageSrcTags(argThat(new ImageSrcMatcher(imageBefore)), anyList()))
-                .thenReturn(Mono.just(imageAfter));
+//        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
+//        when(userService.deleteUserTags(argThat(new UserMatcher(user1)), anyList())).thenReturn(Mono.just(user2));
+//
+//        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tag1));
+//        when(tagService.getTag("tag2", "1")).thenReturn(Mono.just(tag2));
+//        when(tagService.getTag("tag3", "1")).thenReturn(Mono.just(tag3));
+//        when(tagService.deleteTagImages(tag1, List.of("image1"))).thenReturn(Mono.just(tag1After));
+//        when(tagService.deleteTagImages(tag3, List.of("image1"))).thenReturn(Mono.just(tag3After));
+//        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(imageBefore));
+//        when(imageService.deleteImageSrcTags(argThat(new ImageSrcMatcher(imageBefore)), anyList()))
+//                .thenReturn(Mono.just(imageAfter));
 
         testClient.method(HttpMethod.DELETE)
                 .uri("/api/image/tag/")
@@ -243,18 +247,18 @@ class TagHandlerTest {
         UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag2")).build();
 
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
-        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
-        when(userService.deleteUserTags(argThat(new UserMatcher(user1)), anyList())).thenReturn(Mono.just(user2));
-
-        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tagBefore));
-        when(tagService.deleteTagImages(argThat(new TagMatcher(tagBefore)), anyList())).thenReturn(Mono.just(tagAfter));
-        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(image1));
-        when(imageService.getImageSrc("image2")).thenReturn(Mono.just(image2));
-        when(imageService.getImageSrc("image3")).thenReturn(Mono.just(image3));
-        when(imageService.deleteImageSrcTags(argThat(new ImageSrcMatcher(image1)), anyList()))
-                .thenReturn(Mono.just(image1After));
-        when(imageService.deleteImageSrcTags(argThat(new ImageSrcMatcher(image3)), anyList()))
-                .thenReturn(Mono.just(image3After));
+//        when(userService.getUserByUsername("test")).thenReturn(Mono.just(user1));
+//        when(userService.deleteUserTags(argThat(new UserMatcher(user1)), anyList())).thenReturn(Mono.just(user2));
+//
+//        when(tagService.getTag("tag1", "1")).thenReturn(Mono.just(tagBefore));
+//        when(tagService.deleteTagImages(argThat(new TagMatcher(tagBefore)), anyList())).thenReturn(Mono.just(tagAfter));
+//        when(imageService.getImageSrc("image1")).thenReturn(Mono.just(image1));
+//        when(imageService.getImageSrc("image2")).thenReturn(Mono.just(image2));
+//        when(imageService.getImageSrc("image3")).thenReturn(Mono.just(image3));
+//        when(imageService.deleteImageSrcTags(argThat(new ImageSrcMatcher(image1)), anyList()))
+//                .thenReturn(Mono.just(image1After));
+//        when(imageService.deleteImageSrcTags(argThat(new ImageSrcMatcher(image3)), anyList()))
+//                .thenReturn(Mono.just(image3After));
 
         testClient.method(HttpMethod.DELETE)
                 .uri("/api/tag/image")

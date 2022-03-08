@@ -111,16 +111,17 @@ public class ImageService {
 
         return Mono.zip(thumbnailIdMono,
                         thumbnailLocation,
-                        fullImageLocation)
-                .flatMap(t3 -> createImageSrc(t3.getT3(),
+                        fullImageLocation,
+                        getUniqueId())
+                .flatMap(t4 -> createImageSrc(t4.getT4(),
                                               name,
                                               type,
                                               "thumbnail",
-                                              t3.getT2(),
+                                              t4.getT2(),
                                               folderId,
                                               userId,
                                               "full",
-                                              t3.getT3()))
+                                              t4.getT3()))
                 // For whatever reason method reference does not work
                 .flatMap(this::updateImageSrc);
 
