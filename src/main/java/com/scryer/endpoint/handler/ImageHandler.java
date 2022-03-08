@@ -14,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -49,16 +50,16 @@ public class ImageHandler {
     }
 
     public Mono<ServerResponse> postImage(final ServerRequest serverRequest) {
-        var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
+        var userIdMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserIdentity::id);
-        return usernameMono.flatMap(userId -> {
+        return userIdMono.flatMap(userId -> {
             var multivalueMono = serverRequest.multipartData().map(MultiValueMap::toSingleValueMap);
             var typeStringMono = multivalueMono.map(map -> map.get("type").content())
                     .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
                             .map(buffer -> new String(buffer.asByteBuffer().array())))
                     .map(type -> {
                         var split = type.split("/");
-                        return new String[] {type, split[0], split[1]};
+                        return new String[]{type, split[0], split[1]};
                     });
 
             var nameStringMono = multivalueMono.map(map -> map.get("name").content())
@@ -73,90 +74,50 @@ public class ImageHandler {
                     .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
                             .map(buffer -> buffer.asByteBuffer().array()));
 
-            // convert size
-            var thumbnailMono = fullImageMono
-                    .zipWith(typeStringMono)
-                    .flatMap(tuple -> imageResizeService.getThumbnailImage(tuple.getT1(), tuple.getT2()));
 
-            // get the imageIds IDs for both images - reserve their spots in the table.
-            var thumbnailIdMono = imageService.getUniqueId()
-                    .map(id -> ImageSrcModel.builder().id(id).build())
-                    .flatMap(imageService::addImageSrc).map(ImageSrcModel::getId);
-
-            // write images to s3
-            var thumbnailLocation = Mono.zip(thumbnailIdMono, thumbnailMono, typeStringMono)
-                    .map(t3 -> imageUploadService.uploadImage(t3.getT1(), "thumbnail", t3.getT2(), t3.getT3()))
-                    .flatMap(response -> response)
-                    .doOnError(error -> {
-                        thumbnailIdMono.map(id -> ImageSrcModel.builder().id(id).build())
-                                .map(imageService::deleteImageSrc);
-                    });
-
-            var fullImageLocation = Mono.zip(thumbnailIdMono, fullImageMono, typeStringMono)
-                    .map(t3 -> imageUploadService.uploadImage(t3.getT1(), "full", t3.getT2(), t3.getT3()))
-                    .flatMap(response -> response)
-                    .doOnError(error -> {
-                        thumbnailIdMono.map(id -> ImageSrcModel.builder().id(id).build())
-                                .map(imageService::deleteImageSrc);
-                    });
-
-            // get imageId for both
-            var thumbnailSrcMono = Mono.zip(thumbnailIdMono,
-                                            nameStringMono,
-                                            typeStringMono,
-                                            thumbnailLocation,
-                                            folderIdMono,
-                                            fullImageLocation)
-                    .flatMap(t6 -> createImageSrc(t6.getT1(),
-                                                  t6.getT2(),
-                                                  t6.getT3(),
-                                                  "thumbnail",
-                                                  t6.getT4(),
-                                                  t6.getT5(),
-                                                  userId,
-                                                  "full",
-                                                  t6.getT6()))
-                    // For whatever reason method reference does not work
-                    .flatMap(imageSrc -> imageService.updateImageSrc(imageSrc));
-
-            // return thumbnail imageId
-            // fullImageSrcMono.then(..) leads to fullImageSrcMono not running so I probably don't understand it at all
-            return thumbnailSrcMono.flatMap(imageSrc -> ServerResponse.ok()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(BodyInserters.fromValue(imageSrc)))
-                    .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
+            return Mono.zip(nameStringMono, typeStringMono, folderIdMono, fullImageMono)
+                    .flatMap(t4 -> imageService.addImage(t4.getT1(), t4.getT2(), t4.getT3(), t4.getT4(), userId)
+                            .flatMap(imageSrc -> ServerResponse.ok()
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .body(BodyInserters.fromValue(imageSrc)))
+                            .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build()));
 
         }).switchIfEmpty(ServerResponse.status(HttpStatus.UNAUTHORIZED).build());
     }
 
-    public Mono<ServerResponse> deleteImage(final ServerRequest serverRequest) {
-        return Mono.empty();
+    public Mono<ServerResponse> moveImages(final ServerRequest serverRequest) {
+        String folderId = serverRequest.pathVariable("folderId");
+        var imageSrcModelFlux = serverRequest.bodyToFlux(ImageSrcModel.class).cache();
+        return imageSrcModelFlux.map(image -> ImageSrcModel.builder().id(image.getId()).parentFolderId(folderId).build())
+                .flatMap(imageService::updateImageSrc)
+                .collectList()
+                .flatMap(images -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(images)))
+                .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
     }
 
-    private Mono<ImageSrcModel> createImageSrc(final String imageId,
-                                               final String name,
-                                               final String[] type,
-                                               final String size,
-                                               final String path,
-                                               final String folderId,
-                                               final String userId,
-                                               final String alternateSize,
-                                               final String alternateSource) {
-        long currentTime = System.currentTimeMillis();
-        return Mono.just(ImageSrcModel.builder()
-                                 .id(imageId)
-                                 .userId(userId)
-                                 .type(type[0])
-                                 .name(name)
-                                 .size(size)
-                                 .source(new BaseIdentifier("url", path))
-                                 .createDate(currentTime)
-                                 .lastModified(currentTime)
-                                 .parentFolderId(folderId)
-                                 .alternateSizes(Map.of(alternateSize, new BaseIdentifier("url", alternateSource)))
-                                 .imageRankings(List.of())
-                                 .tags(List.of())
-                                 .build());
 
+    public Mono<ServerResponse> deleteImages(final ServerRequest serverRequest) {
+        var userId = jwtManager.getUserIdentity(serverRequest).id();
+        return serverRequest.bodyToFlux(ImageSrcModel.class)
+                .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
+                .flatMap(imageService::deleteImage)
+                .collectList()
+                .flatMap(image -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(image)))
+                .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
+    }
+
+    public Mono<ServerResponse> deleteImage(final ServerRequest serverRequest) {
+        var userId = jwtManager.getUserIdentity(serverRequest).id();
+        return serverRequest.bodyToMono(ImageSrcModel.class)
+                .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
+                .flatMap(imageService::deleteImage)
+                .flatMap(image -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(image)))
+                .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
     }
 }

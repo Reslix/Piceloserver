@@ -64,7 +64,7 @@ public class UserService {
     }
 
     public Mono<UserModel> addUserTags(final UserModel user, final List<String> tags) {
-        var newTags = ConsolidateUtil.getSubtractedTags(user, tags);
+        var newTags = ConsolidateUtil.getCombinedTags(user, tags);
         if (newTags.size() != user.getTags().size()) {
             return updateUser(UserModel.builder()
                                       .id(user.getId())
@@ -78,7 +78,7 @@ public class UserService {
     }
 
     public Mono<UserModel> deleteUserTags(final UserModel user, final List<String> tags) {
-        var newTags = ConsolidateUtil.getCombinedTags(user, tags);
+        var newTags = ConsolidateUtil.getSubtractedTags(user, tags);
         if (newTags.size() != user.getTags().size()) {
             return updateUser(UserModel.builder()
                                       .id(user.getId())
@@ -105,7 +105,6 @@ public class UserService {
                 .createDate(currentTime)
                 .lastModified(currentTime)
                 .rootFolderId(folderId)
-                .tags(List.of())
                 .build();
         var enhancedRequest = UpdateItemEnhancedRequest.builder(UserModel.class)
                 .item(userModel)

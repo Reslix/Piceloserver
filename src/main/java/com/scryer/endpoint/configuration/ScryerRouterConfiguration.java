@@ -29,11 +29,20 @@ public class ScryerRouterConfiguration {
     public RouterFunction<ServerResponse> imageRoute(final ImageHandler imageHandler) {
         var postImagePredicate = RequestPredicates.POST("/api/image")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var getImagesByFolderPredicate = RequestPredicates.GET("/api/image/folder/{folderId}")
+        var getImagesByFolderPredicate = RequestPredicates.GET("/api/images/folder/{folderId}")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+        var moveImagesPredicate = RequestPredicates.PUT("/api/images/folder/{folderId}")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+        var deleteImagePredicate = RequestPredicates.DELETE("/api/image")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+        var deleteImagesPredicate = RequestPredicates.DELETE("/api/images")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
 
         return RouterFunctions.route(postImagePredicate, imageHandler::postImage)
                 .andRoute(getImagesByFolderPredicate, imageHandler::getImagesByFolder)
+                .andRoute(moveImagesPredicate, imageHandler::moveImages)
+                .andRoute(deleteImagePredicate, imageHandler::deleteImage)
+                .andRoute(deleteImagesPredicate, imageHandler::deleteImages)
                 .filter(routeMetricsFilter);
     }
 
@@ -45,15 +54,15 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var createFolderPredicate = RequestPredicates.POST("/api/folder")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var updateFolderPredicate = RequestPredicates.PUT("/api/folder/{folderId}")
+        var moveFolderPredicate = RequestPredicates.PUT("/api/folder/{folderId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-        var deleteFolderPredicate = RequestPredicates.DELETE("/api/folder/{folderId}")
+        var deleteFolderPredicate = RequestPredicates.DELETE("/api/folder")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
 
         return RouterFunctions.route(getFolderPredicate, folderHandler::getFolderById)
                 .andRoute(getFolderByUserIdPredicate, folderHandler::getFolderMapByUserId)
                 .andRoute(createFolderPredicate, folderHandler::postNewFolder)
-                .andRoute(updateFolderPredicate, folderHandler::putUpdateFolder)
+                .andRoute(moveFolderPredicate, folderHandler::moveFolder)
                 .andRoute(deleteFolderPredicate, folderHandler::deleteFolder)
                 .filter(routeMetricsFilter);
     }

@@ -32,8 +32,8 @@ public class ReactiveUserAccessService implements ReactiveUserDetailsService {
 
     @Override
     public Mono<UserDetails> findByUsername(final String username) {
-        return getUser(username).switchIfEmpty(Mono.just(username).filter(name -> name.contains("@")).
-                                                                flatMap(this::getUserByEmail))
+        return getUser(username).switchIfEmpty(Mono.defer(() -> Mono.just(username).filter(name -> name.contains("@")).
+                                                                flatMap(this::getUserByEmail)))
                 .cast(UserDetails.class);
     }
 

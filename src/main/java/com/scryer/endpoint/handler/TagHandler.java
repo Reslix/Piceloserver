@@ -43,7 +43,6 @@ public class TagHandler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(tag)))
                 .flatMap(response -> response);
-
     }
 
     public Mono<ServerResponse> updateTagImageSrcs(final ServerRequest serverRequest) {
@@ -57,7 +56,7 @@ public class TagHandler {
         var imageSrcsMono = imageIdsMono.flatMapIterable(list -> list).flatMap(imageService::getImageSrc);
         var tagNameMono = requestMono.map(UpdateTagImageSrcsRequest::tag).cache();
         var tagMono = tagNameMono.flatMap(tag -> tagService.getTag(tag, userId)
-                .switchIfEmpty(tagService.addNewTag(tag, userId))).cache();
+                .switchIfEmpty(Mono.defer(() -> tagService.addNewTag(tag, userId)))).cache();
 
         var updatedUserMono = Mono.zip(userMono, tagNameMono.map(List::of), userService::addUserTags);
         var updatedTagMono = Mono.zip(tagMono, imageIdsMono, tagService::updateTagImageIds);
@@ -88,9 +87,12 @@ public class TagHandler {
         var imageIdMono = requestMono.map(UpdateImageSrcTagsRequest::imageId).cache();
         var imageSrcMono = imageIdMono.flatMap(imageService::getImageSrc);
         var tagsMono = requestMono.map(UpdateImageSrcTagsRequest::tags).cache();
-        var tagsFlux = tagsMono.flatMapIterable(list -> list)
-                .flatMap(tag -> tagService.getTag(tag, userId).switchIfEmpty(tagService.addNewTag(tag, userId)));
-
+        var existingTagsFlux = tagsMono.flatMapIterable(list -> list)
+                .flatMap(tag -> tagService.getTag(tag, userId));
+        var newTagsFlux = tagsMono.flatMapIterable(list -> list)
+                .filterWhen(tag -> tagService.getTag(tag, userId).map(t -> false).defaultIfEmpty(true))
+                .flatMap(tag -> tagService.addNewTag(tag, userId));
+        var tagsFlux = Flux.concat(existingTagsFlux, newTagsFlux);
         var updatedUserMono = Mono.zip(userMono, tagsMono, userService::addUserTags);
         var updatedTagsMono = Flux.zip(tagsFlux, imageIdMono.map(List::of).repeat(), tagService::updateTagImageIds)
                 .collectList();
@@ -132,6 +134,7 @@ public class TagHandler {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(imageSrc)));
     }
+
 
     record DeleteImageSrcTagsRequest(String imageId, List<String> tags) {
     }

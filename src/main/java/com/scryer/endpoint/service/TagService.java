@@ -28,6 +28,7 @@ public class TagService {
                                                                    .partitionValue(name)
                                                                    .sortValue(userId)
                                                                    .build());
+
         return Mono.justOrEmpty(tagTable.index("tag_index")
                                         .query(QueryEnhancedRequest.builder()
                                                        .queryConditional(queryConditional)
