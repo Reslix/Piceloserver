@@ -43,6 +43,14 @@ public class TagHandler {
                 .flatMap(response -> response);
     }
 
+    public Mono<ServerResponse> getUserTags(final ServerRequest serverRequest) {
+        JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
+        String userId = serverRequest.pathVariable("userId");
+        return tagService.getUserTags(userIdentity.id())
+                .collectList()
+                .flatMap(list -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(list)));
+    }
+
     public Mono<ServerResponse> updateTagImageSrcs(final ServerRequest serverRequest) {
         JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
         var userId = userIdentity.id();

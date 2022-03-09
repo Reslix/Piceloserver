@@ -80,7 +80,7 @@ public class DynamoDBTableConfiguration {
 
     @Bean
     public DynamoDbTable<TagModel> tagTable(final DynamoDbEnhancedClient client) {
-        var projection = Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes("id").build();
+        var projection = Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes("id", "name").build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
                 .indexName("userId_index")
                 .projection(projection)

@@ -71,6 +71,8 @@ public class ScryerRouterConfiguration {
     public RouterFunction<ServerResponse> tagRoute(final TagHandler tagHandler) {
         var getTagPredicate = RequestPredicates.GET("/api/tag/{tagName}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+        var getUserTagsPredicate = RequestPredicates.GET("/api/tags/user/{userId}")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var updateTagImageSrcsPredicate = RequestPredicates.PUT("/api/image/tag/{tag}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var updateImageSrcTagsPredicate = RequestPredicates.PUT("/api/tag/image/{imageId}")
@@ -81,6 +83,7 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
 
         return RouterFunctions.route(getTagPredicate, tagHandler::getTagByName)
+                .andRoute(getUserTagsPredicate, tagHandler::getUserTags)
                 .andRoute(updateTagImageSrcsPredicate, tagHandler::updateTagImageSrcs)
                 .andRoute(updateImageSrcTagsPredicate, tagHandler::updateImageSrcTags)
                 .andRoute(deleteImageSrcTagsPredicate, tagHandler::deleteImageSrcTags)

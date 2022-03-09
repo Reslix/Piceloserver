@@ -93,6 +93,21 @@ class TagHandlerIntegrationTest {
     }
 
     @Test
+    void testGetUserTags() throws JsonProcessingException {
+        TagModel tag1 = TagModel.builder().name("tag1").userId("1").id("1").imageRankingIds(List.of()).imageIds(List.of()).build();
+        TagModel tag2 = TagModel.builder().name("tag2").userId("1").id("2").imageRankingIds(List.of()).imageIds(List.of()).build();
+        TagModel tag3 = TagModel.builder().name("tag3").userId("1").id("3").imageRankingIds(List.of()).imageIds(List.of()).build();
+        TagModel tag4 = TagModel.builder().name("tag4").userId("1").id("4").imageRankingIds(List.of()).imageIds(List.of()).build();
+
+        tagTable.putItem(PutItemEnhancedRequest.<TagModel>builder(TagModel.class).item(tag1).build());
+        tagTable.putItem(PutItemEnhancedRequest.<TagModel>builder(TagModel.class).item(tag2).build());
+        tagTable.putItem(PutItemEnhancedRequest.<TagModel>builder(TagModel.class).item(tag3).build());
+        tagTable.putItem(PutItemEnhancedRequest.<TagModel>builder(TagModel.class).item(tag4).build());
+        when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
+        testClient.get().uri("/api/tags/user/1").exchange().expectBody().json(mapper.writeValueAsString(List.of(tag1, tag2, tag3, tag4)));
+    }
+
+    @Test
     void testUpdateTagImageSrcs_AddTwo() throws IOException {
         TagModel tag1After = TagModel.builder()
                 .name("tag1")
@@ -278,7 +293,7 @@ class TagHandlerIntegrationTest {
 
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
 
-        EntityExchangeResult<byte[]> resultBytes =testClient.method(HttpMethod.DELETE)
+        EntityExchangeResult<byte[]> resultBytes = testClient.method(HttpMethod.DELETE)
                 .uri("/api/image/tag/")
                 .body(BodyInserters.fromValue(new TagHandler.DeleteImageSrcTagsRequest("image1",
                                                                                        List.of("tag1", "tag3"))))

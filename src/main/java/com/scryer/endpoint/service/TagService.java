@@ -5,6 +5,7 @@ import com.scryer.util.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -16,6 +17,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 public class TagService {
@@ -40,13 +42,27 @@ public class TagService {
                     var tagMono = Mono.justOrEmpty(tagTable.index("tag_index")
                                                            .query(QueryEnhancedRequest.builder()
                                                                           .queryConditional(queryConditional)
-                                                                          .attributesToProject()
                                                                           .build())
                                                            .stream()
                                                            .flatMap(page -> page.items().stream())
                                                            .findFirst().map(tagTable::getItem)).cache();
                     return tagMono.map(tag -> tagRedisTemplate.opsForHash().put(userId + name, name, tag)).then(tagMono);
                 }));
+    }
+
+    public Flux<TagModel> getUserTags(final String userId) {
+        var queryConditional = QueryConditional.keyEqualTo(Key.builder()
+                                                                   .partitionValue(userId)
+                                                                   .build());
+        var tagFlux = Mono.justOrEmpty(tagTable.index("userId_index")
+                                               .query(QueryEnhancedRequest.builder()
+                                                              .queryConditional(queryConditional)
+                                                              .build()).
+                                               stream()
+                                               .flatMap(page -> page.items()
+                                                       .stream()))
+                .flatMapIterable(Stream::toList);
+        return tagFlux.flatMap(tag -> getTag(tag.getName(), userId));
     }
 
     public Mono<TagModel> addNewTag(final String name, final String userId) {
