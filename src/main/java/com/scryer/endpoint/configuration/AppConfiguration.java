@@ -25,6 +25,9 @@ public class AppConfiguration {
     @Value("${app.locals3}")
     private String locals3;
 
+    @Value("${app.localredis}")
+    private String localredis;
+
     @Value("${app.region}")
     private String region;
 
@@ -50,6 +53,14 @@ public class AppConfiguration {
     public URI locals3() {
         if (this.localddb != null) {
             return URI.create(this.locals3);
+        }
+        return null;
+    }
+
+    @Bean
+    public URI localredis() {
+        if (this.localredis != null) {
+            return URI.create(this.localredis);
         }
         return null;
     }
