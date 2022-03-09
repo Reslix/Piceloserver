@@ -40,7 +40,8 @@ public class UserHandler {
         return userService.getUserByUsername(username)
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(BodyInserters.fromValue(user)));
+                        .body(BodyInserters.fromValue(user)))
+                .switchIfEmpty(ServerResponse.notFound().build());
     }
 
     public Mono<ServerResponse> getCheckUsername(final ServerRequest serverRequest) {
@@ -92,7 +93,7 @@ public class UserHandler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(userModel)));
             });
-        }).switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).build());
+        }).switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
     }
 
     public Mono<ServerResponse> updateUser(final ServerRequest serverRequest) {
