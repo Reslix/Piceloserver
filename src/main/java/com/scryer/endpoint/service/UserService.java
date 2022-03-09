@@ -63,34 +63,6 @@ public class UserService {
                                                       .build()));
     }
 
-    public Mono<UserModel> addUserTags(final UserModel user, final List<String> tags) {
-        var newTags = ConsolidateUtil.getCombinedTags(user, tags);
-        if (newTags.size() != user.getTags().size()) {
-            return updateUser(UserModel.builder()
-                                      .id(user.getId())
-                                      .username(user.getUsername())
-                                      .lastModified(System.currentTimeMillis())
-                                      .tags(newTags)
-                                      .build());
-
-        }
-        return Mono.just(user);
-    }
-
-    public Mono<UserModel> deleteUserTags(final UserModel user, final List<String> tags) {
-        var newTags = ConsolidateUtil.getSubtractedTags(user, tags);
-        if (newTags.size() != user.getTags().size()) {
-            return updateUser(UserModel.builder()
-                                      .id(user.getId())
-                                      .username(user.getUsername())
-                                      .lastModified(System.currentTimeMillis())
-                                      .tags(newTags)
-                                      .build());
-
-        }
-        return Mono.just(user);
-    }
-
     public Mono<UserModel> addUser(final NewUserRequest request,
                                    final String id,
                                    final String folderId) {
