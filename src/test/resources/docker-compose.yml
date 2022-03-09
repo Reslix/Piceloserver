@@ -1,9 +1,10 @@
 services:
+  redis:
+    image: redis:7.0-rc2
+    command: redis-server --loglevel warning --requirepass fakestaws
+
   dynamodb:
     image: amazon/dynamodb-local:latest
-    container_name: dynamodb-local
-    ports:
-      - "8000:8000"
     volumes:
       - type: bind
         source: ./dynamodb
@@ -12,30 +13,26 @@ services:
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
 
   s3:
-    image: minio/minio
-    container_name: s3-local
-    ports:
-      - 9000:9000
-      - 9001:9001
+    image: minio/minio:edge
+    restart: always
     volumes:
       - type: bind
         source: ./minio
         target: /home/minios3
-    environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
-
     working_dir: /home/minios3
+
+    environment:
+      MINIO_ROOT_USER: fakestaws
+      MINIO_ROOT_PASSWORD: fakestaws
     command: "server ./scryer --console-address :9001"
 
   mc:
     image: minio/mc
     depends_on:
       - s3
-    container_name: mcbkp
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set scryer http://s3:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      /usr/bin/mc alias set scryer http://s3:9000 fakestaws fakestaws;
       /usr/bin/mc mb scryer/scryerimagerepo;
       /usr/bin/mc policy set public scryer/scryerimagerepo;"
-      
+

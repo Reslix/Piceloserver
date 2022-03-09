@@ -1,12 +1,27 @@
 package com.scryer.endpoint.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scryer.model.ddb.TagModel;
 import org.junit.ClassRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -22,19 +37,42 @@ import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 
 import java.io.File;
 import java.net.URI;
+import java.time.Duration;
 
 @TestConfiguration
 public class ScryerTestConfiguration {
 
-    @ClassRule
-    public static DockerComposeContainer environment =
-            new DockerComposeContainer(new File("src/test/resources/docker-compose.yml")).withExposedService("dynamodb_1", 8000)
-                    .withExposedService("s3_1", 9000);
+    @Bean
+    public DockerComposeContainer container() {
+        var container = new DockerComposeContainer(new File("./src/test/resources/docker-compose.yml"))
+                .withBuild(true)
+                .withLocalCompose(true)
+                .withOptions("--compatibility")
+                .withExposedService("dynamodb_1", 8000, Wait.defaultWaitStrategy().withStartupTimeout(Duration.ofSeconds(60)))
+                .withExposedService("s3_1", 9000, Wait.defaultWaitStrategy().withStartupTimeout(Duration.ofSeconds(60)))
+                .withExposedService("redis_1", 6379, Wait.defaultWaitStrategy().withStartupTimeout(Duration.ofSeconds(60)));
+        container.start();
+        return container;
+    }
 
-    public static String localddbUrl = environment.getServiceHost("dynamodb_1", 8000) +
-                                       ":" + environment.getServicePort("dynamodb_1", 8000);
-    public static String locals3Url = environment.getServiceHost("s3_1", 8000) +
-                                 ":" + environment.getServicePort("s3_1", 8000);
+    @Bean
+    public String localddbUrl(final DockerComposeContainer container) {
+        return "http://" + container.getServiceHost("dynamodb_1", 8000) +
+               ":" + container.getServicePort("dynamodb_1", 8000);
+    }
+
+    @Bean
+    public String locals3Url(final DockerComposeContainer container) {
+        return "http://" + container.getServiceHost("s3_1", 9000) +
+               ":" + container.getServicePort("s3_1", 9000);
+    }
+
+    @Bean
+    public String localredisUrl(final DockerComposeContainer container) {
+        return "http://" + container.getServiceHost("redis_1", 6379) +
+               ":" + container.getServicePort("redis_1", 6379);
+    }
+
     @Autowired
     private String awsAccessKeyId;
 
@@ -44,65 +82,19 @@ public class ScryerTestConfiguration {
     @Autowired
     private Region region;
 
-    private URI locals3 = URI.create(locals3Url);
-
-    private URI localddb = URI.create(localddbUrl);
-
     @Bean
-    @Primary
-    public S3Client s3Client(final Region s3Region, final URI locals3, final String s3BucketName) {
-        S3Client s3Client;
-        if (locals3 != null) {
-            s3Client = S3Client.builder().region(s3Region).endpointOverride(locals3).build();
-        } else {
-            s3Client = S3Client.builder().region(s3Region).build();
-        }
-
-        try {
-            var createBucketConfiguration = CreateBucketConfiguration.builder().locationConstraint(region.id()).build();
-            var createBucketRequest = CreateBucketRequest.builder()
-                    .bucket(s3BucketName)
-                    .createBucketConfiguration(createBucketConfiguration)
-                    .acl(BucketCannedACL.PUBLIC_READ)
-                    .build();
-            s3Client.createBucket(createBucketRequest);
-            var request = HeadBucketRequest.builder().bucket(s3BucketName).build();
-            var waiterResponse = s3Client.waiter().waitUntilBucketExists(request);
-        } catch (BucketAlreadyExistsException | BucketAlreadyOwnedByYouException ignored) {
-
-        }
-        return s3Client;
+    public URI locals3(final String locals3Url) {
+        return URI.create(locals3Url);
     }
 
     @Bean
-    @Primary
-    public DynamoDbClient dynamoDbClient(final Region region,
-                                         final URI localddb,
-                                         final String awsAccessKeyId,
-                                         final String awsSecretAccessKey) {
-        AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
-        if(localddb != null) {
-            return DynamoDbClient.builder()
-                    .region(region)
-                    .endpointOverride(localddb)
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .build();
-        }
-        else {
-            return DynamoDbClient.builder()
-                    .region(region)
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .build();
-        }
+    public URI localddb(final String localddbUrl) {
+        return URI.create(localddbUrl);
     }
 
-    @Bean
-    public DynamoDbEnhancedClient dynamoDbEnhancedAsyncClient(final DynamoDbClient dynamoDbClient) {
-        return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
-    }
 
     @Bean
-    public ObjectMapper mapper() {
-        return new ObjectMapper();
+    public URI localredis(final String localredisUrl) {
+        return URI.create(localredisUrl);
     }
 }

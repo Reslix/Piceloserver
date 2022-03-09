@@ -1,6 +1,7 @@
 package com.scryer.endpoint.configuration;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.regions.Region;
@@ -30,7 +31,9 @@ public class S3Configuration {
     }
 
     @Bean
-    public S3Client s3Client(final Region s3Region, final URI locals3, final String s3BucketName) {
+    public S3Client s3Client(final Region s3Region,
+                             @Qualifier("locals3") final URI locals3,
+                             final String s3BucketName) {
         S3Client s3Client;
         if (locals3 != null) {
             s3Client = S3Client.builder().region(s3Region).endpointOverride(locals3).build();

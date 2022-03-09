@@ -2,6 +2,7 @@ package com.scryer.endpoint.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -31,18 +32,17 @@ public class DynamoDBConfiguration {
 
     @Bean
     public DynamoDbClient dynamoDbClient(final Region region,
-                                         final URI localddb,
+                                         @Qualifier("localddb") final URI localddb,
                                          final String awsAccessKeyId,
                                          final String awsSecretAccessKey) {
         AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
-        if(localddb != null) {
+        if (localddb != null) {
             return DynamoDbClient.builder()
                     .region(region)
                     .endpointOverride(localddb)
                     .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
                     .build();
-        }
-        else {
+        } else {
             return DynamoDbClient.builder()
                     .region(region)
                     .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))

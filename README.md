@@ -12,3 +12,6 @@
 ## Prospective TODO
 * Sharing permissions model
 * API for non-owner modification
+
+# Requirements
+* Latest Docker to run integration tests
