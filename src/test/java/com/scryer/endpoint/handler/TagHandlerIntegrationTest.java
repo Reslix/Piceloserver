@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scryer.endpoint.EndpointApplication;
+import com.scryer.endpoint.configuration.ScryerTestConfiguration;
 import com.scryer.endpoint.security.HandlerTestSecurityConfig;
 import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.TagService;
@@ -15,6 +16,7 @@ import com.scryer.util.TagMatcher;
 import com.scryer.util.UserMatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,8 +30,6 @@ import reactor.core.publisher.Hooks;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,17 +37,16 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Integration test because unit tests will destroy my tendons
  */
-@SpringBootTest(classes = {EndpointApplication.class, HandlerTestSecurityConfig.class},
-                webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = {EndpointApplication.class, HandlerTestSecurityConfig.class, ScryerTestConfiguration.class},
+                webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+                properties = {"spring.main.allow-bean-definition-overriding=true"})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TagHandlerIntegrationTest {
-
 
     @MockBean
     private JWTManager jwtManager;

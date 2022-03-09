@@ -2,6 +2,8 @@ package com.scryer.endpoint.service;
 
 import com.scryer.model.ddb.TagModel;
 import com.scryer.util.IdGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -18,25 +20,33 @@ import java.util.Set;
 @Service
 public class TagService {
     private final DynamoDbTable<TagModel> tagTable;
+    private final ReactiveRedisTemplate<String, TagModel> tagRedisTemplate;
 
-    public TagService(final DynamoDbTable<TagModel> tagTable) {
+    @Autowired
+    public TagService(final DynamoDbTable<TagModel> tagTable,
+                      final ReactiveRedisTemplate<String, TagModel> tagRedisTemplate) {
         this.tagTable = tagTable;
+        this.tagRedisTemplate = tagRedisTemplate;
     }
 
     public Mono<TagModel> getTag(final String name, final String userId) {
-        var queryConditional = QueryConditional.keyEqualTo(Key.builder()
-                                                                   .partitionValue(name)
-                                                                   .sortValue(userId)
-                                                                   .build());
+        return tagRedisTemplate.opsForHash().get(userId + name, name).cast(TagModel.class)
+                .switchIfEmpty(Mono.defer(() -> {
+                    var queryConditional = QueryConditional.keyEqualTo(Key.builder()
+                                                                               .partitionValue(name)
+                                                                               .sortValue(userId)
+                                                                               .build());
 
-        return Mono.justOrEmpty(tagTable.index("tag_index")
-                                        .query(QueryEnhancedRequest.builder()
-                                                       .queryConditional(queryConditional)
-                                                       .attributesToProject()
-                                                       .build())
-                                        .stream()
-                                        .flatMap(page -> page.items().stream())
-                                        .findFirst().map(tagTable::getItem));
+                    var tagMono = Mono.justOrEmpty(tagTable.index("tag_index")
+                                                           .query(QueryEnhancedRequest.builder()
+                                                                          .queryConditional(queryConditional)
+                                                                          .attributesToProject()
+                                                                          .build())
+                                                           .stream()
+                                                           .flatMap(page -> page.items().stream())
+                                                           .findFirst().map(tagTable::getItem)).cache();
+                    return tagMono.map(tag -> tagRedisTemplate.opsForHash().put(userId + name, name, tag)).then(tagMono);
+                }));
     }
 
     public Mono<TagModel> addNewTag(final String name, final String userId) {
@@ -64,16 +74,18 @@ public class TagService {
                         .id(tag.getId())
                         .imageIds(List.copyOf(ids))
                         .build();
-        return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
-                                                                 .item(newTagModel)
-                                                                 .ignoreNulls(true)
-                                                                 .build())
-                                 .attributes());
+        var newTag = Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
+                                                                       .item(newTagModel)
+                                                                       .ignoreNulls(true)
+                                                                       .build())
+                                       .attributes())
+                .cache();
+        return newTag.map(t -> tagRedisTemplate.opsForHash().put(t.getUserId() + t.getName(), t.getName(), t)).then(newTag);
     }
 
 
     public Mono<TagModel> deleteTag(final TagModel tag) {
-        return Mono.justOrEmpty(tagTable.deleteItem(tag));
+        return tagRedisTemplate.opsForHash().delete(tag.getUserId() + tag.getName()).then(Mono.justOrEmpty(tagTable.deleteItem(tag)));
     }
 
     public Mono<TagModel> deleteTagImages(final TagModel tag, final List<String> imageId) {
@@ -87,20 +99,26 @@ public class TagService {
                         .id(tag.getId())
                         .imageIds(List.copyOf(ids))
                         .build();
+
         if (ids.size() > 0 || tag.getImageRankingIds().size() > 0) {
-            return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
-                                                                     .item(newTagModel)
-                                                                     .ignoreNulls(true)
-                                                                     .build())
-                                     .attributes());
-        }
-        else {
-            return Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
-                                                                     .item(newTagModel)
-                                                                     .ignoreNulls(true)
-                                                                     .build())
-                                     .attributes())
-                    .flatMap(this::deleteTag);
+            var newTag = Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
+                                                                           .item(newTagModel)
+                                                                           .ignoreNulls(true)
+                                                                           .build())
+                                           .attributes());
+            return newTag.map(t -> tagRedisTemplate.opsForHash().put(t.getUserId() + t.getName(), t.getName(), t)).then(newTag);
+
+        } else {
+            var newTag = Mono.just(tagTable.updateItemWithResponse(UpdateItemEnhancedRequest.builder(TagModel.class)
+                                                                           .item(newTagModel)
+                                                                           .ignoreNulls(true)
+                                                                           .build())
+                                           .attributes()).cache();
+
+            return newTag.flatMap(this::deleteTag)
+                    .then(newTag)
+                    .map(t -> tagRedisTemplate.opsForHash().delete(t.getUserId() + t.getName()))
+                    .then(newTag);
         }
     }
 
