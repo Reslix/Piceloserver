@@ -55,7 +55,6 @@ public class TagHandler {
         JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
         var userId = userIdentity.id();
         var username = userIdentity.username();
-        var userMono = userService.getUserByUsername(username);
 
         var requestMono = serverRequest.bodyToMono(UpdateTagImageSrcsRequest.class).cache();
         var imageIdsMono = requestMono.map(request -> request.imageIds).cache();
@@ -64,7 +63,6 @@ public class TagHandler {
         var tagMono = tagNameMono.flatMap(tag -> tagService.getTag(tag, userId)
                 .switchIfEmpty(Mono.defer(() -> tagService.addNewTag(tag, userId)))).cache();
 
-        var updatedUserMono = Mono.zip(userMono, tagNameMono.map(List::of), userService::addUserTags);
         var updatedTagMono = Mono.zip(tagMono, imageIdsMono, tagService::updateTagImageIds);
         var updatedImagesMono = Flux.zip(imageSrcsMono,
                                          tagMono.repeat().map(TagModel::getName).map(List::of),
@@ -72,8 +70,7 @@ public class TagHandler {
                 .flatMap(image -> image)
                 .collectList();
 
-        return updatedUserMono
-                .then(updatedTagMono)
+        return updatedTagMono
                 .then(updatedImagesMono)
                 .flatMap(images -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -86,8 +83,6 @@ public class TagHandler {
     public Mono<ServerResponse> updateImageSrcTags(final ServerRequest serverRequest) {
         JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
         var userId = userIdentity.id();
-        var username = userIdentity.username();
-        var userMono = userService.getUserByUsername(username);
 
         var requestMono = serverRequest.bodyToMono(UpdateImageSrcTagsRequest.class).cache();
         var imageIdMono = requestMono.map(UpdateImageSrcTagsRequest::imageId).cache();
@@ -99,14 +94,12 @@ public class TagHandler {
                 .filterWhen(tag -> tagService.getTag(tag, userId).map(t -> false).defaultIfEmpty(true))
                 .flatMap(tag -> tagService.addNewTag(tag, userId));
         var tagsFlux = Flux.concat(existingTagsFlux, newTagsFlux);
-        var updatedUserMono = Mono.zip(userMono, tagsMono, userService::addUserTags);
         var updatedTagsMono = Flux.zip(tagsFlux, imageIdMono.map(List::of).repeat(), tagService::updateTagImageIds)
                 .collectList();
         var updatedImageSrcMono = Mono.zip(imageSrcMono, tagsMono, imageService::addTagsToImageSrc)
                 .flatMap(imageSrc -> imageSrc);
 
-        return updatedUserMono
-                .then(updatedTagsMono)
+        return updatedTagsMono
                 .then(updatedImageSrcMono)
                 .flatMap(imageSrc -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON).
@@ -120,7 +113,6 @@ public class TagHandler {
         JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
         var userId = userIdentity.id();
         var username = userIdentity.username();
-        var userMono = userService.getUserByUsername(username);
 
         var requestMono = serverRequest.bodyToMono(DeleteImageSrcTagsRequest.class).cache();
         var tagNamesMono = requestMono.map(DeleteImageSrcTagsRequest::tags).cache();
@@ -132,11 +124,10 @@ public class TagHandler {
                 .filter(tag -> tag.getImageRankingIds().size() == 0 && tag.getImageIds().size() == 0)
                 .map(TagModel::getName)
                 .collectList();
-        var updatedUserMono = Mono.zip(userMono, deletedTagsMono, userService::deleteUserTags);
         var updatedImageMono = Mono.zip(imageMono, tagNamesMono, imageService::deleteImageSrcTags)
                 .flatMap(image -> image);
 
-        return updatedUserMono.then(updatedImageMono).flatMap(imageSrc -> ServerResponse.ok()
+        return deletedTagsMono.then(updatedImageMono).flatMap(imageSrc -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(imageSrc)));
     }
@@ -149,7 +140,6 @@ public class TagHandler {
         JWTManager.UserIdentity userIdentity = jwtManager.getUserIdentity(serverRequest);
         var userId = userIdentity.id();
         var username = userIdentity.username();
-        var userMono = userService.getUserByUsername(username);
 
         var requestMono = serverRequest.bodyToMono(DeleteTagImageSrcsRequest.class).cache();
         var tagNameMono = requestMono.map(DeleteTagImageSrcsRequest::tag).cache();
@@ -161,13 +151,12 @@ public class TagHandler {
                 .filter(tag -> tag.getImageRankingIds().size() == 0 && tag.getImageIds().size() == 0)
                 .map(TagModel::getName)
                 .map(List::of);
-        var updatedUserMono = Mono.zip(userMono, deletedTagMono, userService::deleteUserTags);
         var updatedImagesMono = Flux.zip(imageFlux, tagNameMono.repeat().map(List::of),
                                          imageService::deleteImageSrcTags)
                 .flatMap(list -> list)
                 .collectList();
 
-        return updatedUserMono.then(updatedImagesMono).flatMap(imageSrc -> ServerResponse.ok()
+        return deletedTagMono.then(updatedImagesMono).flatMap(imageSrc -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(imageSrc)));
     }
