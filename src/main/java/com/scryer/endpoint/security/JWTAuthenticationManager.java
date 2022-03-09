@@ -3,16 +3,11 @@ package com.scryer.endpoint.security;
 import com.scryer.endpoint.service.ReactiveUserAccessService;
 import com.scryer.model.ddb.UserAccessModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 @Component
 public class JWTAuthenticationManager implements ReactiveAuthenticationManager {

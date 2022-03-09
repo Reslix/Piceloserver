@@ -4,7 +4,6 @@ import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.ImageResizeService;
 import com.scryer.endpoint.service.ImageService;
 import com.scryer.endpoint.service.ImageUploadService;
-import com.scryer.model.ddb.BaseIdentifier;
 import com.scryer.model.ddb.ImageSrcModel;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
@@ -14,11 +13,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class ImageHandler {

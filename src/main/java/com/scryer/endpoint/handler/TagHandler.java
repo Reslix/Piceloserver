@@ -6,7 +6,6 @@ import com.scryer.endpoint.service.TagService;
 import com.scryer.endpoint.service.UserService;
 import com.scryer.model.ddb.ImageSrcModel;
 import com.scryer.model.ddb.TagModel;
-import com.scryer.model.ddb.UserModel;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -16,7 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class TagHandler {

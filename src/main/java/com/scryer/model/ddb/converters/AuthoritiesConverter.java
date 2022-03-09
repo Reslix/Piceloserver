@@ -2,15 +2,10 @@ package com.scryer.model.ddb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import lombok.Builder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.stereotype.Component;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
@@ -18,7 +13,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 public class AuthoritiesConverter implements AttributeConverter<Collection<? extends GrantedAuthority>> {
     private final ObjectMapper mapper;
