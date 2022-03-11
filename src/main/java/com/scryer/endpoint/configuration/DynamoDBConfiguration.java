@@ -18,45 +18,29 @@ import java.net.URI;
 @ComponentScan
 public class DynamoDBConfiguration {
 
-    @Autowired
-    private String awsAccessKeyId;
+	@Bean
+	public DynamoDbClient dynamoDbClient(final Region region, @Qualifier("ddbUri") final URI ddbUri,
+			@Qualifier("awsAccessKeyId") final String awsAccessKeyId,
+			@Qualifier("awsSecretAccessKey") final String awsSecretAccessKey) {
+		AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
+		if (ddbUri != null) {
+			return DynamoDbClient.builder().region(region).endpointOverride(ddbUri)
+					.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials)).build();
+		}
+		else {
+			return DynamoDbClient.builder().region(region)
+					.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials)).build();
+		}
+	}
 
-    @Autowired
-    private String awsSecretAccessKey;
+	@Bean
+	public DynamoDbEnhancedClient dynamoDbEnhancedAsyncClient(final DynamoDbClient dynamoDbClient) {
+		return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
+	}
 
-    @Autowired
-    private URI localddb;
+	@Bean
+	public ObjectMapper mapper() {
+		return new ObjectMapper();
+	}
 
-    @Autowired
-    private Region region;
-
-    @Bean
-    public DynamoDbClient dynamoDbClient(final Region region,
-                                         @Qualifier("localddb") final URI localddb,
-                                         final String awsAccessKeyId,
-                                         final String awsSecretAccessKey) {
-        AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
-        if (localddb != null) {
-            return DynamoDbClient.builder()
-                    .region(region)
-                    .endpointOverride(localddb)
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .build();
-        } else {
-            return DynamoDbClient.builder()
-                    .region(region)
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .build();
-        }
-    }
-
-    @Bean
-    public DynamoDbEnhancedClient dynamoDbEnhancedAsyncClient(final DynamoDbClient dynamoDbClient) {
-        return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
-    }
-
-    @Bean
-    public ObjectMapper mapper() {
-        return new ObjectMapper();
-    }
 }

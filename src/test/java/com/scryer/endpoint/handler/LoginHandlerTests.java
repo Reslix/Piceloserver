@@ -1,8 +1,9 @@
 package com.scryer.endpoint.handler;
 
 import com.scryer.endpoint.EndpointApplication;
+import com.scryer.endpoint.configuration.AppConfiguration;
 import com.scryer.endpoint.security.WebSecurityConfig;
-import com.scryer.model.ddb.UserAccessModel;
+import com.scryer.endpoint.service.userdetails.UserAccessModel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -29,57 +30,38 @@ import static org.mockito.Mockito.when;
 
 @EnableAutoConfiguration
 @SpringBootTest(classes = {EndpointApplication.class, WebSecurityConfig.class},
-                webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class LoginHandlerTests {
 
-    @Autowired
-    private WebTestClient webTestClient;
+	@Autowired
+	private WebTestClient webTestClient;
 
-    private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+	private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-    @MockBean
-    private DynamoDbTable<UserAccessModel> userSecurityModelTable;
+	@MockBean
+	private DynamoDbTable<UserAccessModel> userSecurityModelTable;
 
-    @Test
-    void testLogin() {
-        UserAccessModel userAccessModel = UserAccessModel.builder()
-                .username("test")
-                .password(passwordEncoder.encode("test"))
-                .authorities(List.of(new SimpleGrantedAuthority("user")))
-                .accountNonExpired(true)
-                .enabled(true)
-                .accountNonLocked(true)
-                .accountLoggedIn(false)
-                .credentialsNonExpired(true)
-                .build();
-        when(userSecurityModelTable.getItem(any(Key.class)))
-                .thenReturn(userAccessModel);
-        when(userSecurityModelTable.updateItem(any(UpdateItemEnhancedRequest.class)))
-                .thenReturn(userAccessModel);
+	@Test
+	void testLogin() {
+		UserAccessModel userAccessModel = UserAccessModel.builder().username("test")
+				.password(passwordEncoder.encode("test")).authorities(List.of(new SimpleGrantedAuthority("user")))
+				.accountNonExpired(true).enabled(true).accountNonLocked(true).accountLoggedIn(false)
+				.credentialsNonExpired(true).build();
+		when(userSecurityModelTable.getItem(any(Key.class))).thenReturn(userAccessModel);
+		when(userSecurityModelTable.updateItem(any(UpdateItemEnhancedRequest.class))).thenReturn(userAccessModel);
 
-        MultiValueMap<String, ResponseCookie> cookies =
-                webTestClient.post()
-                        .uri("/auth/login")
-                        .header(HttpHeaders.AUTHORIZATION, "Basic " +
-                                                           Base64Utils.encodeToString("test:test".getBytes(
-                                                                   StandardCharsets.UTF_8)))
-                        .exchange()
-                        .expectStatus().isOk()
-                        .returnResult(Object.class).getResponseCookies();
-    }
+		MultiValueMap<String, ResponseCookie> cookies = webTestClient.post().uri("/auth/login")
+				.header(HttpHeaders.AUTHORIZATION,
+						"Basic " + Base64Utils.encodeToString("test:test".getBytes(StandardCharsets.UTF_8)))
+				.exchange().expectStatus().isOk().returnResult(Object.class).getResponseCookies();
+	}
 
-    @Test
-    void testUnsecureApi() {
-        webTestClient.post()
-                .uri("/auth/logout")
-                .exchange()
-                .expectStatus().isOk();
+	@Test
+	void testUnsecureApi() {
+		webTestClient.post().uri("/auth/logout").exchange().expectStatus().isOk();
 
-        webTestClient.get()
-                .uri("/api/hello")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus()
-                .isUnauthorized();
-    }
+		webTestClient.get().uri("/api/hello").accept(MediaType.APPLICATION_JSON).exchange().expectStatus()
+				.isUnauthorized();
+	}
+
 }

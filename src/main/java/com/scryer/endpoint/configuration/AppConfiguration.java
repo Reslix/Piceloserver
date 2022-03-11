@@ -1,8 +1,10 @@
 package com.scryer.endpoint.configuration;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import software.amazon.awssdk.regions.Region;
 
 import java.net.URI;
@@ -13,75 +15,68 @@ import java.net.URI;
 @Configuration
 public class AppConfiguration {
 
-    @Value("${app.cookie_domain}")
-    private String cookieDomain;
+	@Autowired
+	private Environment env;
 
-    @Value("${app.port}")
-    private String port;
+	@Bean
+	public String cookieDomain() {
+		return env.getProperty("app.cookie_domain");
+	}
 
-    @Value("${app.localddb}")
-    private String localddb;
+	@Bean
+	public String port() {
+		return env.getProperty("app.port");
+	}
 
-    @Value("${app.locals3}")
-    private String locals3;
+	@Bean
+	public URI ddbUri() {
+		var ddbEndpoint = env.getProperty("app.ddbEndpoint");
+		if (ddbEndpoint != null) {
+			return URI.create(ddbEndpoint);
+		}
+		return null;
+	}
 
-    @Value("${app.localredis}")
-    private String localredis;
+	@Bean
+	public URI s3Uri() {
+		var s3Endpoint = env.getProperty("app.s3Endpoint");
+		if (s3Endpoint != null) {
+			return URI.create(s3Endpoint);
+		}
+		return null;
+	}
 
-    @Value("${app.region}")
-    private String region;
+	@Bean
+	public URI redisUri() {
+		var redisEndpoint = env.getProperty("app.redisEndpoint");
+		if (redisEndpoint != null) {
+			return URI.create(redisEndpoint);
+		}
+		return null;
+	}
 
-    @Bean
-    public String cookieDomain() {
-        return this.cookieDomain;
-    }
+	@Bean
+	public Region region() {
+		var region = env.getProperty("app.region");
+		if (region != null) {
+			return Region.of(region);
+		}
+		return null;
+	}
 
-    @Bean
-    public String port() {
-        return this.port;
-    }
+	@Bean
+	public String keystorePassword() {
+		return env.getProperty("app.keystore.password");
+	}
 
-    @Bean
-    public URI localddb() {
-        if (this.localddb != null) {
-            return URI.create(this.localddb);
-        }
-        return null;
-    }
+	@Bean
+	public String awsAccessKeyId() {
+		return env.getProperty("app.aws.access.key.id");
+	}
 
-    @Bean
-    public URI locals3() {
-        if (this.localddb != null) {
-            return URI.create(this.locals3);
-        }
-        return null;
-    }
+	@Bean
+	public String awsSecretAccessKey() {
+		return env.getProperty("app.aws.secret.access.key");
+	}
 
-    @Bean
-    public URI localredis() {
-        if (this.localredis != null) {
-            return URI.create(this.localredis);
-        }
-        return null;
-    }
-
-    @Bean
-    public Region region() {
-        return Region.of(this.region);
-    }
-
-    @Bean
-    public String keystorePassword() {
-        return System.getenv("KEYSTORE_PASSWORD");
-    }
-
-    @Bean
-    public String awsAccessKeyId() {
-        return System.getenv("AWS_ACCESS_KEY_ID");
-    }
-
-    @Bean
-    public String awsSecretAccessKey() {
-        return System.getenv("AWS_SECRET_ACCESS_KEY");
-    }
 }

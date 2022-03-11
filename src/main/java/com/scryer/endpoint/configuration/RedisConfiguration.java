@@ -1,7 +1,6 @@
 package com.scryer.endpoint.configuration;
 
-import com.scryer.model.ddb.TagModel;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.scryer.endpoint.service.tag.TagModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,33 +19,26 @@ import java.net.URI;
 @Configuration
 public class RedisConfiguration {
 
-    @Autowired
-    private URI localredis;
+	@Bean
+	@Primary
+	public ReactiveRedisTemplate<String, TagModel> tagRedisTemplate(
+			final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
+		RedisSerializationContext<String, TagModel> context = RedisSerializationContext
+				.<String, TagModel>newSerializationContext().hashKey(new StringRedisSerializer())
+				.hashValue(new Jackson2JsonRedisSerializer<>(TagModel.class)).key(new StringRedisSerializer())
+				.value(new Jackson2JsonRedisSerializer<>(TagModel.class)).build();
+		return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, context);
+	}
 
-    @Autowired
-    private String awsSecretAccessKey;
+	@Bean
+	@Primary
+	public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory(@Qualifier("redisUri") final URI redisUri,
+			@Qualifier("awsSecretAccessKey") final String awsSecretAccessKey) {
+		LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder().build();
+		RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisUri.getHost(),
+				redisUri.getPort());
+		redisStandaloneConfiguration.setPassword(awsSecretAccessKey);
+		return new LettuceConnectionFactory(redisStandaloneConfiguration, clientConfig);
+	}
 
-    @Bean
-    @Primary
-    public ReactiveRedisTemplate<String, TagModel> tagRedisTemplate(final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
-        RedisSerializationContext<String, TagModel> context = RedisSerializationContext.<String, TagModel>newSerializationContext()
-                .hashKey(new StringRedisSerializer())
-                .hashValue(new Jackson2JsonRedisSerializer<>(TagModel.class))
-                .key(new StringRedisSerializer())
-                .value(new Jackson2JsonRedisSerializer<>(TagModel.class))
-                .build();
-        return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, context);
-    }
-
-    @Bean
-    @Primary
-    public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory(
-            @Qualifier("localredis") final URI localredis,
-            final String awsSecretAccessKey) {
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder().build();
-        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(localredis.getHost(),
-                                                                                                     localredis.getPort());
-        redisStandaloneConfiguration.setPassword(awsSecretAccessKey);
-        return new LettuceConnectionFactory(redisStandaloneConfiguration, clientConfig);
-    }
 }

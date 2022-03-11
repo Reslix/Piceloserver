@@ -22,95 +22,74 @@ import java.util.List;
 @EnableWebFluxSecurity
 public class WebSecurityConfig {
 
-    @Autowired
-    private JWTAuthenticationManager jwtAuthenticationManager;
+	@Autowired
+	private JWTAuthenticationManager jwtAuthenticationManager;
 
-    @Autowired
-    private JWTSecurityContextRepository jwtSecurityContextRepository;
+	@Autowired
+	private JWTSecurityContextRepository jwtSecurityContextRepository;
 
-    @Autowired
-    private ReactiveUserDetailsService reactiveUserDetailsService;
+	@Autowired
+	private ReactiveUserDetailsService reactiveUserDetailsService;
 
-    @Bean
-    ReactiveAuthenticationManager authenticationManager(final ReactiveUserDetailsService reactiveUserDetailsService) {
-        return new UserDetailsRepositoryReactiveAuthenticationManager(reactiveUserDetailsService);
-    }
+	@Bean
+	ReactiveAuthenticationManager authenticationManager(final ReactiveUserDetailsService reactiveUserDetailsService) {
+		return new UserDetailsRepositoryReactiveAuthenticationManager(reactiveUserDetailsService);
+	}
 
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowCredentials(true);
-        corsConfiguration.setAllowedOriginPatterns(List.of("*"));
-        corsConfiguration.setAllowedMethods(List.of("*"));
-        corsConfiguration.setAllowedHeaders(List.of("*"));
-        corsConfiguration.setExposedHeaders(List.of("*"));
+	@Bean
+	CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration corsConfiguration = new CorsConfiguration();
+		corsConfiguration.setAllowCredentials(true);
+		corsConfiguration.setAllowedOriginPatterns(List.of("*"));
+		corsConfiguration.setAllowedMethods(List.of("*"));
+		corsConfiguration.setAllowedHeaders(List.of("*"));
+		corsConfiguration.setExposedHeaders(List.of("*"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", corsConfiguration);
-        return source;
-    }
+		source.registerCorsConfiguration("/**", corsConfiguration);
+		return source;
+	}
 
+	@Bean
+	public SecurityWebFilterChain securityWebFilterChainAuth(final ServerHttpSecurity http,
+			final CorsConfigurationSource source, final ReactiveAuthenticationManager authenticationManager) {
+		return http.securityMatcher(new PathPatternParserServerWebExchangeMatcher("/auth/**")).cors()
+				.configurationSource(source).and().csrf().disable().formLogin().disable().httpBasic()
+				.authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+					exception.printStackTrace();
+					serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+				})).and().authenticationManager(authenticationManager).exceptionHandling(exceptionHandlingSpec -> {
+					exceptionHandlingSpec
+							.authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+								exception.printStackTrace();
+								serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+							})).accessDeniedHandler((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+								serverWebExchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+							}));
+				}).authorizeExchange(exchange -> {
+					exchange.pathMatchers("/auth/login").authenticated();
+					exchange.pathMatchers("/auth/**").permitAll().anyExchange().authenticated();
+				}).logout().disable().build();
+	}
 
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChainAuth(final ServerHttpSecurity http,
-                                                             final CorsConfigurationSource source,
-                                                             final ReactiveAuthenticationManager authenticationManager) {
-        return http
-                .securityMatcher(new PathPatternParserServerWebExchangeMatcher("/auth/**"))
-                .cors().configurationSource(source).and()
-                .csrf().disable()
-                .formLogin().disable()
-                .httpBasic()
-                .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                    exception.printStackTrace();
-                    serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                })).and()
-                .authenticationManager(authenticationManager)
-                .exceptionHandling(exceptionHandlingSpec -> {
-                    exceptionHandlingSpec
-                            .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                               exception.printStackTrace();
-                                serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                            }))
-                            .accessDeniedHandler((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                                serverWebExchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                            }));
-                })
-                .authorizeExchange(exchange -> {
-                    exchange.pathMatchers("/auth/login").authenticated();
-                    exchange.pathMatchers("/auth/**").permitAll().anyExchange().authenticated();
-                })
-                .logout().disable()
-                .build();
-    }
+	@Bean
+	public SecurityWebFilterChain securityWebFilterChainAPI(final ServerHttpSecurity http,
+			final CorsConfigurationSource source, final JWTAuthenticationManager jwtAuthenticationManager,
+			final JWTSecurityContextRepository jwtSecurityContextRepository) {
+		return http.securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/**")).cors()
+				.configurationSource(source).and().csrf().disable().formLogin().disable().httpBasic().disable()
+				.exceptionHandling(exceptionHandlingSpec -> {
+					exceptionHandlingSpec
+							.authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+								serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+							})).accessDeniedHandler((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
+								serverWebExchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+							}));
+				}).authorizeExchange(exchange -> {
+					exchange.pathMatchers("/api/**").authenticated();
+				}).authenticationManager(jwtAuthenticationManager)
+				.securityContextRepository(jwtSecurityContextRepository).logout().disable().build();
+	}
 
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChainAPI(final ServerHttpSecurity http,
-                                                            final CorsConfigurationSource source,
-                                                            final JWTAuthenticationManager jwtAuthenticationManager,
-                                                            final JWTSecurityContextRepository jwtSecurityContextRepository) {
-        return http
-                .securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/**"))
-                .cors().configurationSource(source).and()
-                .csrf().disable()
-                .formLogin().disable()
-                .httpBasic().disable()
-                .exceptionHandling(exceptionHandlingSpec -> {
-                    exceptionHandlingSpec
-                            .authenticationEntryPoint((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                                serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                            }))
-                            .accessDeniedHandler((serverWebExchange, exception) -> Mono.fromRunnable(() -> {
-                                serverWebExchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                            }));
-                })
-                .authorizeExchange(exchange -> {
-                    exchange.pathMatchers("/api/**").authenticated();
-                })
-                .authenticationManager(jwtAuthenticationManager)
-                .securityContextRepository(jwtSecurityContextRepository)
-                .logout().disable()
-                .build();
-    }
 }

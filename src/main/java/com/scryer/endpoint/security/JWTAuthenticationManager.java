@@ -1,7 +1,7 @@
 package com.scryer.endpoint.security;
 
-import com.scryer.endpoint.service.ReactiveUserAccessService;
-import com.scryer.model.ddb.UserAccessModel;
+import com.scryer.endpoint.service.userdetails.ReactiveUserAccessService;
+import com.scryer.endpoint.service.userdetails.UserAccessModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -12,23 +12,21 @@ import reactor.core.publisher.Mono;
 @Component
 public class JWTAuthenticationManager implements ReactiveAuthenticationManager {
 
-    private final ReactiveUserAccessService reactiveUserAccessService;
+	private final ReactiveUserAccessService reactiveUserAccessService;
 
-    @Autowired
-    public JWTAuthenticationManager(final ReactiveUserAccessService reactiveUserAccessService) {
-        this.reactiveUserAccessService = reactiveUserAccessService;
-    }
+	@Autowired
+	public JWTAuthenticationManager(final ReactiveUserAccessService reactiveUserAccessService) {
+		this.reactiveUserAccessService = reactiveUserAccessService;
+	}
 
-    @Override
-    public Mono<Authentication> authenticate(Authentication authentication) {
-        var usernameMono = Mono.just(authentication.getPrincipal().toString());
-        return usernameMono.flatMap(reactiveUserAccessService::findByUsername)
-                .filter(userDetails -> ((UserAccessModel) userDetails).isAccountLoggedIn())
-                .map(userDetails -> new UsernamePasswordAuthenticationToken(userDetails.getUsername(),
-                                                                            userDetails.getUsername(),
-                                                                            userDetails.getAuthorities()))
-                .cast(Authentication.class)
-                .defaultIfEmpty(authentication)
-                .onErrorReturn(authentication);
-    }
+	@Override
+	public Mono<Authentication> authenticate(Authentication authentication) {
+		var usernameMono = Mono.just(authentication.getPrincipal().toString());
+		return usernameMono.flatMap(reactiveUserAccessService::findByUsername)
+				.filter(userDetails -> ((UserAccessModel) userDetails).isAccountLoggedIn())
+				.map(userDetails -> new UsernamePasswordAuthenticationToken(userDetails.getUsername(),
+						userDetails.getUsername(), userDetails.getAuthorities()))
+				.cast(Authentication.class).defaultIfEmpty(authentication).onErrorReturn(authentication);
+	}
+
 }

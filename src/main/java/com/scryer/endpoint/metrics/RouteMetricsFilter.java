@@ -14,30 +14,31 @@ import reactor.core.publisher.Mono;
 @Component
 public class RouteMetricsFilter implements HandlerFilterFunction<ServerResponse, ServerResponse> {
 
-    private final MeterRegistry meterRegistry;
+	private final MeterRegistry meterRegistry;
 
-    @Autowired
-    public RouteMetricsFilter(final MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
+	@Autowired
+	public RouteMetricsFilter(final MeterRegistry meterRegistry) {
+		this.meterRegistry = meterRegistry;
+	}
 
-    @Override
-    public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction<ServerResponse> next) {
-        var counter = meterRegistry.counter(request.methodName() +
-                              "/" +
-                              request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get(), Tags.empty());
-        counter.increment();
-        return next.handle(request);
-    }
+	@Override
+	public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction<ServerResponse> next) {
+		var counter = meterRegistry.counter(
+				request.methodName() + "/" + request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get(),
+				Tags.empty());
+		counter.increment();
+		return next.handle(request);
+	}
 
-    @Override
-    public HandlerFilterFunction<ServerResponse, ServerResponse> andThen(HandlerFilterFunction<ServerResponse,
-            ServerResponse> after) {
-        return HandlerFilterFunction.super.andThen(after);
-    }
+	@Override
+	public HandlerFilterFunction<ServerResponse, ServerResponse> andThen(
+			HandlerFilterFunction<ServerResponse, ServerResponse> after) {
+		return HandlerFilterFunction.super.andThen(after);
+	}
 
-    @Override
-    public HandlerFunction<ServerResponse> apply(HandlerFunction<ServerResponse> handler) {
-        return HandlerFilterFunction.super.apply(handler);
-    }
+	@Override
+	public HandlerFunction<ServerResponse> apply(HandlerFunction<ServerResponse> handler) {
+		return HandlerFilterFunction.super.apply(handler);
+	}
+
 }

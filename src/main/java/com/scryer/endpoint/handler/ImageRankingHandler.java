@@ -7,15 +7,16 @@ import reactor.core.publisher.Mono;
 @Service
 public class ImageRankingHandler {
 
-    public Mono<ServerResponse> getImageRankings(final ServerResponse serverResponse) {
-        return Mono.empty();
-    }
+	public Mono<ServerResponse> getImageRankings(final ServerResponse serverResponse) {
+		return Mono.empty();
+	}
 
-    public Mono<ServerResponse> createImageRankings(final ServerResponse serverResponse) {
-        return Mono.empty();
-    }
+	public Mono<ServerResponse> createImageRankings(final ServerResponse serverResponse) {
+		return Mono.empty();
+	}
 
-    public Mono<ServerResponse> updateRankingStep(final ServerResponse serverResponse) {
-        return Mono.empty();
-    }
+	public Mono<ServerResponse> updateRankingStep(final ServerResponse serverResponse) {
+		return Mono.empty();
+	}
+
 }
