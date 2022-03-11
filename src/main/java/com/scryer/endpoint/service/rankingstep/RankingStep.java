@@ -13,6 +13,8 @@ import lombok.ToString;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +37,16 @@ public final class RankingStep implements DynamoDBTableModel {
 	private final List<StepDatum> dataTarget;
 
 	private final String meta;
+
+	@DynamoDbPartitionKey
+	public String getId() {
+		return this.id;
+	}
+
+	@DynamoDbSecondaryPartitionKey(indexNames = {"userId_index"})
+	public String getUserId() {
+		return this.userId;
+	}
 
 	@DynamoDbConvertedBy(StepDatumConverter.class)
 	public List<StepDatum> getDataTarget() {
