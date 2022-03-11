@@ -1,4 +1,4 @@
-package com.scryer.endpoint.service.imagerankingservice;
+package com.scryer.endpoint.service.rankingstep;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

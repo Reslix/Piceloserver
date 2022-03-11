@@ -1,4 +1,4 @@
-package com.scryer.endpoint.service.imagerankingservice;
+package com.scryer.endpoint.service.imagerankings;
 
 import com.scryer.endpoint.service.DynamoDBTableModel;
 import com.scryer.endpoint.service.HasId;
