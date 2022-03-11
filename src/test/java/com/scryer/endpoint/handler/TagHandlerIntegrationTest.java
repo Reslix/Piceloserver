@@ -130,8 +130,7 @@ class TagHandlerIntegrationTest {
         ImageSrcModel image1Updated = ImageSrcModel.builder().id("image1").tags(List.of("tag1", "tag2")).build();
         ImageSrcModel image2Updated = ImageSrcModel.builder().id("image2").tags(List.of("tag1")).build();
         ImageSrcModel image3Updated = ImageSrcModel.builder().id("image3").tags(List.of("tag1", "tag2")).build();
-        UserModel user1 = UserModel.builder().username("test").id("1").tags(List.of()).build();
-        UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag1", "tag2")).build();
+        UserModel user1 = UserModel.builder().username("test").id("1").build();
 
         userTable.putItem(user1);
         imageTable.putItem(image1);
@@ -176,7 +175,6 @@ class TagHandlerIntegrationTest {
         List<ImageSrcModel> result2 = mapper.readValue(result2Bytes.getResponseBody(), new TypeReference<List<ImageSrcModel>>() {
         });
 
-        UserModel userResult = userTable.getItem(Key.builder().partitionValue("test").build());
         TagModel tag1Result = tagService.getTag("tag1", "1").block();
         TagModel tag2Result = tagService.getTag("tag2", "1").block();
         assertTrue(new ImageSrcMatcher(image1Updated).matches(result2.get(0)));
@@ -185,12 +183,11 @@ class TagHandlerIntegrationTest {
         assertTrue(new ImageSrcMatcher(image1Updated).matches(imageTable.getItem(image1)));
         assertTrue(new ImageSrcMatcher(image2Updated).matches(imageTable.getItem(image2)));
         assertTrue(new ImageSrcMatcher(image3Updated).matches(imageTable.getItem(image3)));
-        assertTrue(new UserMatcher(user2).matches(userResult));
         assertTrue(new TagMatcher(tag1After).matches(tag1Result));
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
         tagTable.deleteItem(tag1Result);
         tagTable.deleteItem(tag2Result);
-        userTable.deleteItem(userResult);
+        userTable.deleteItem(user1);
         imageTable.deleteItem(result2.get(0));
         imageTable.deleteItem(result1.get(1));
         imageTable.deleteItem(result2.get(1));
@@ -210,9 +207,7 @@ class TagHandlerIntegrationTest {
 
         ImageSrcModel imageAfter1 = ImageSrcModel.builder().id("image1").tags(List.of("tag1", "tag2")).build();
         ImageSrcModel imageAfter2 = ImageSrcModel.builder().id("image1").tags(List.of("tag1", "tag2", "tag3")).build();
-        UserModel user1 = UserModel.builder().username("test").id("1").tags(List.of()).build();
-        UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag1", "tag2", "tag3")).build();
-
+        UserModel user1 = UserModel.builder().username("test").id("1").build();
 
         userTable.putItem(user1);
         imageTable.putItem(imageBefore);
@@ -244,13 +239,11 @@ class TagHandlerIntegrationTest {
 
         ImageSrcModel result1 = mapper.readValue(result1Bytes.getResponseBody(), ImageSrcModel.class);
         ImageSrcModel result2 = mapper.readValue(result2Bytes.getResponseBody(), ImageSrcModel.class);
-        UserModel userResult = userTable.getItem(Key.builder().partitionValue("test").build());
         TagModel tag1Result = tagService.getTag("tag1", "1").block();
         TagModel tag2Result = tagService.getTag("tag2", "1").block();
         TagModel tag3Result = tagService.getTag("tag3", "1").block();
         assertTrue(new ImageSrcMatcher(imageAfter1).matches(result1));
         assertTrue(new ImageSrcMatcher(imageAfter2).matches(result2));
-        assertTrue(new UserMatcher(user2).matches(userResult));
         assertTrue(new TagMatcher(tag1After).matches(tag1Result));
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
         assertTrue(new TagMatcher(tag3After).matches(tag3Result));
@@ -258,7 +251,7 @@ class TagHandlerIntegrationTest {
         tagTable.deleteItem(tag1Result);
         tagTable.deleteItem(tag2Result);
         tagTable.deleteItem(tag3Result);
-        userTable.deleteItem(userResult);
+        userTable.deleteItem(user1);
         imageTable.deleteItem(result1);
         imageTable.deleteItem(result2);
     }
@@ -281,8 +274,7 @@ class TagHandlerIntegrationTest {
         ImageSrcModel image1After = ImageSrcModel.builder().id("image1").tags(List.of("tag2")).build();
         ImageSrcModel image2After = ImageSrcModel.builder().id("image2").tags(List.of("tag2", "tag3")).build();
 
-        UserModel user1 = UserModel.builder().username("test").id("1").tags(List.of("tag1", "tag2", "tag3")).build();
-        UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag2", "tag3")).build();
+        UserModel user1 = UserModel.builder().username("test").id("1").build();
 
         tagTable.putItem(tag1);
         tagTable.putItem(tag2);
@@ -305,20 +297,18 @@ class TagHandlerIntegrationTest {
 
         ImageSrcModel result1 = mapper.readValue(resultBytes.getResponseBody(), ImageSrcModel.class);
         ImageSrcModel result2 = imageTable.getItem(image2Before);
-        UserModel userResult = userTable.getItem(Key.builder().partitionValue("test").build());
         TagModel tag1Result = tagService.getTag("tag1", "1").block();
         TagModel tag2Result = tagService.getTag("tag2", "1").block();
         TagModel tag3Result = tagService.getTag("tag3", "1").block();
         assertTrue(new ImageSrcMatcher(image1After).matches(result1));
         assertTrue(new ImageSrcMatcher(image2After).matches(result2));
-        assertTrue(new UserMatcher(user2).matches(userResult));
         assertNull(tag1Result);
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
         assertTrue(new TagMatcher(tag3After).matches(tag3Result));
 
         tagTable.deleteItem(tag2Result);
         tagTable.deleteItem(tag3Result);
-        userTable.deleteItem(userResult);
+        userTable.deleteItem(user1);
         imageTable.deleteItem(result1);
         imageTable.deleteItem(result2);
     }
@@ -345,8 +335,7 @@ class TagHandlerIntegrationTest {
         ImageSrcModel image2After = ImageSrcModel.builder().id("image2").tags(List.of("tag1", "tag2", "tag3")).build();
         ImageSrcModel image3After = ImageSrcModel.builder().id("image3").tags(List.of("tag2", "tag3")).build();
 
-        UserModel user1 = UserModel.builder().username("test").id("1").tags(List.of("tag1", "tag2", "tag3")).build();
-        UserModel user2 = UserModel.builder().id("1").username("test").tags(List.of("tag1", "tag2", "tag3")).build();
+        UserModel user1 = UserModel.builder().username("test").id("1").build();
 
         tagTable.putItem(tag1Before);
         tagTable.putItem(tag2Before);
@@ -370,14 +359,12 @@ class TagHandlerIntegrationTest {
 
         List<ImageSrcModel> result1 = mapper.readValue(result1Bytes.getResponseBody(), new TypeReference<List<ImageSrcModel>>() {
         });
-        UserModel userResult = userTable.getItem(Key.builder().partitionValue("test").build());
         TagModel tag1Result = tagService.getTag("tag1", "1").block();
         TagModel tag2Result = tagService.getTag("tag2", "1").block();
         TagModel tag3Result = tagService.getTag("tag3", "1").block();
         assertTrue(new ImageSrcMatcher(image1After).matches(result1.get(0)));
         assertTrue(new ImageSrcMatcher(image2After).matches(imageTable.getItem(image2)));
         assertTrue(new ImageSrcMatcher(image3After).matches(result1.get(1)));
-        assertTrue(new UserMatcher(user2).matches(userResult));
         assertTrue(new TagMatcher(tag1After).matches(tag1Result));
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
         assertTrue(new TagMatcher(tag3After).matches(tag3Result));
@@ -385,7 +372,7 @@ class TagHandlerIntegrationTest {
         tagTable.deleteItem(tag1Result);
         tagTable.deleteItem(tag2Result);
         tagTable.deleteItem(tag3Result);
-        userTable.deleteItem(userResult);
+        userTable.deleteItem(user1);
         imageTable.deleteItem(image1);
         imageTable.deleteItem(image2);
         imageTable.deleteItem(image3);

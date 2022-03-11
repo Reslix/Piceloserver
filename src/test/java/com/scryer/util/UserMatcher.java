@@ -17,7 +17,6 @@ public class UserMatcher implements ArgumentMatcher<UserModel> {
         return right != null &&
                Objects.equals(left.getUsername(), right.getUsername()) &&
                Objects.equals(left.getId(), right.getId()) &&
-               Objects.equals(left.getTags(), right.getTags()) &&
                Objects.equals(left.getDisplayName(), right.getDisplayName()) &&
                Objects.equals(left.getFirstName(), right.getFirstName()) &&
                Objects.equals(left.getLastName(), right.getLastName()) &&

@@ -1,7 +1,7 @@
 package com.scryer.endpoint.configuration;
 
 import com.scryer.model.ddb.FolderModel;
-import com.scryer.model.ddb.ImageRankingsModel;
+import com.scryer.model.ddb.ImageRankingModel;
 import com.scryer.model.ddb.ImageSrcModel;
 import com.scryer.model.ddb.TagModel;
 import com.scryer.model.ddb.UserAccessModel;
@@ -65,7 +65,7 @@ public class DynamoDBTableConfiguration {
     }
 
     @Bean
-    public DynamoDbTable<ImageRankingsModel> imageRankingsTable(final DynamoDbEnhancedClient client) {
+    public DynamoDbTable<ImageRankingModel> imageRankingTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
                 .indexName("userId_index")
@@ -75,7 +75,7 @@ public class DynamoDBTableConfiguration {
         var request = CreateTableEnhancedRequest.builder()
                 .globalSecondaryIndices(userIdIndex)
                 .build();
-        return TableInitializer.getOrCreateTable(client, ImageRankingsModel.class, request);
+        return TableInitializer.getOrCreateTable(client, ImageRankingModel.class, request);
     }
 
     @Bean

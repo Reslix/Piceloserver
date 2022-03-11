@@ -12,13 +12,14 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
-@DynamoDbImmutable(builder = ImageRankingsModel.ImageRankingsModelBuilder.class)
-public final class ImageRankingsModel implements DynamoDBTableModel, HasId {
+@DynamoDbImmutable(builder = ImageRankingModel.ImageRankingModelBuilder.class)
+public final class ImageRankingModel implements DynamoDBTableModel, HasId {
     private final String id;
     private final String userId;
     private final String name;
     private final Long lastModified;
     private final Long createDate;
+    private final List<String> rankingSteps;
     private final List<String> imageIds;
     private final List<String> tags;
 

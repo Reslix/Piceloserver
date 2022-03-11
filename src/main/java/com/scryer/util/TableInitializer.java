@@ -8,8 +8,6 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 
-import javax.annotation.Resource;
-
 /**
  * Creates tables if they have not already been created
  */
