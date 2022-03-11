@@ -18,29 +18,28 @@ import java.net.URI;
 @ComponentScan
 public class DynamoDBConfiguration {
 
-	@Bean
-	public DynamoDbClient dynamoDbClient(final Region region, @Qualifier("ddbUri") final URI ddbUri,
-			@Qualifier("awsAccessKeyId") final String awsAccessKeyId,
-			@Qualifier("awsSecretAccessKey") final String awsSecretAccessKey) {
-		AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
-		if (ddbUri != null) {
-			return DynamoDbClient.builder().region(region).endpointOverride(ddbUri)
-					.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials)).build();
-		}
-		else {
-			return DynamoDbClient.builder().region(region)
-					.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials)).build();
-		}
-	}
+    @Bean
+    public DynamoDbClient dynamoDbClient(final Region region, @Qualifier("ddbUri") final URI ddbUri,
+                                         @Qualifier("awsAccessKeyId") final String awsAccessKeyId,
+                                         @Qualifier("awsSecretAccessKey") final String awsSecretAccessKey) {
+        AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
+        if (ddbUri != null) {
+            return DynamoDbClient.builder().region(region).endpointOverride(ddbUri)
+                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials)).build();
+        } else {
+            return DynamoDbClient.builder().region(region)
+                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials)).build();
+        }
+    }
 
-	@Bean
-	public DynamoDbEnhancedClient dynamoDbEnhancedAsyncClient(final DynamoDbClient dynamoDbClient) {
-		return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
-	}
+    @Bean
+    public DynamoDbEnhancedClient dynamoDbEnhancedAsyncClient(final DynamoDbClient dynamoDbClient) {
+        return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
+    }
 
-	@Bean
-	public ObjectMapper mapper() {
-		return new ObjectMapper();
-	}
+    @Bean
+    public ObjectMapper mapper() {
+        return new ObjectMapper();
+    }
 
 }

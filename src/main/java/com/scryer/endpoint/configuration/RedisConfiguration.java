@@ -19,26 +19,26 @@ import java.net.URI;
 @Configuration
 public class RedisConfiguration {
 
-	@Bean
-	@Primary
-	public ReactiveRedisTemplate<String, TagModel> tagRedisTemplate(
-			final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
-		RedisSerializationContext<String, TagModel> context = RedisSerializationContext
-				.<String, TagModel>newSerializationContext().hashKey(new StringRedisSerializer())
-				.hashValue(new Jackson2JsonRedisSerializer<>(TagModel.class)).key(new StringRedisSerializer())
-				.value(new Jackson2JsonRedisSerializer<>(TagModel.class)).build();
-		return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, context);
-	}
+    @Bean
+    @Primary
+    public ReactiveRedisTemplate<String, TagModel> tagRedisTemplate(final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
+        RedisSerializationContext<String, TagModel> context = RedisSerializationContext
+                .<String, TagModel>newSerializationContext().hashKey(new StringRedisSerializer())
+                .hashValue(new Jackson2JsonRedisSerializer<>(TagModel.class)).key(new StringRedisSerializer())
+                .value(new Jackson2JsonRedisSerializer<>(TagModel.class)).build();
+        return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, context);
+    }
 
-	@Bean
-	@Primary
-	public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory(@Qualifier("redisUri") final URI redisUri,
-			@Qualifier("awsSecretAccessKey") final String awsSecretAccessKey) {
-		LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder().build();
-		RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisUri.getHost(),
-				redisUri.getPort());
-		redisStandaloneConfiguration.setPassword(awsSecretAccessKey);
-		return new LettuceConnectionFactory(redisStandaloneConfiguration, clientConfig);
-	}
+    @Bean
+    @Primary
+    public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory(@Qualifier("redisUri") final URI redisUri,
+                                                                         @Qualifier("awsSecretAccessKey")
+                                                                         final String awsSecretAccessKey) {
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder().build();
+        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisUri.getHost(),
+                                                                                                     redisUri.getPort());
+        redisStandaloneConfiguration.setPassword(awsSecretAccessKey);
+        return new LettuceConnectionFactory(redisStandaloneConfiguration, clientConfig);
+    }
 
 }

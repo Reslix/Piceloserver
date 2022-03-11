@@ -12,13 +12,22 @@ import org.springframework.security.web.server.util.matcher.PathPatternParserSer
 @Order(1)
 public class HandlerTestSecurityConfig {
 
-	@Bean
-	@Primary
-	public SecurityWebFilterChain securityWebFilterChain(final ServerHttpSecurity http) {
-		return http.securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/**")).csrf().disable()
-				.formLogin().disable().httpBasic().disable().authorizeExchange(exchange -> {
-					exchange.anyExchange().permitAll();
-				}).logout().disable().build();
-	}
+    @Bean
+    @Primary
+    public SecurityWebFilterChain securityWebFilterChain(final ServerHttpSecurity http) {
+        return http.securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/**"))
+                .csrf()
+                .disable()
+                .formLogin()
+                .disable()
+                .httpBasic()
+                .disable()
+                .authorizeExchange(exchange -> {
+                    exchange.anyExchange().permitAll();
+                })
+                .logout()
+                .disable()
+                .build();
+    }
 
 }

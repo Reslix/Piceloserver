@@ -20,91 +20,91 @@ import java.util.List;
 @Service
 public class ImageHandler {
 
-	private final ImageService imageService;
+    private final ImageService imageService;
 
-	private final TagService tagService;
+    private final TagService tagService;
 
-	private final JWTManager jwtManager;
+    private final JWTManager jwtManager;
 
-	public ImageHandler(final ImageService imageService, final TagService tagService, final JWTManager jwtManager) {
-		this.imageService = imageService;
-		this.tagService = tagService;
-		this.jwtManager = jwtManager;
-	}
+    public ImageHandler(final ImageService imageService, final TagService tagService, final JWTManager jwtManager) {
+        this.imageService = imageService;
+        this.tagService = tagService;
+        this.jwtManager = jwtManager;
+    }
 
-	// Get imagesrc by folder
-	// Upload imageIds
-	// Delete images
-	public Mono<ServerResponse> getImagesByFolder(final ServerRequest serverRequest) {
-		String folderId = serverRequest.pathVariable("folderId");
-		return imageService.getImageSrcForFolder(folderId).collectList().flatMap(imageSrcs -> ServerResponse.ok()
-				.contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(imageSrcs)));
-	}
+    // Get imagesrc by folder
+    // Upload imageIds
+    // Delete images
+    public Mono<ServerResponse> getImagesByFolder(final ServerRequest serverRequest) {
+        String folderId = serverRequest.pathVariable("folderId");
+        return imageService.getImageSrcForFolder(folderId).collectList().flatMap(imageSrcs -> ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(imageSrcs)));
+    }
 
-	public Mono<ServerResponse> postImage(final ServerRequest serverRequest) {
-		var userIdMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest)).map(JWTManager.UserIdentity::id);
-		return userIdMono.flatMap(userId -> {
-			var multivalueMono = serverRequest.multipartData().map(MultiValueMap::toSingleValueMap);
-			var typeStringMono = multivalueMono.map(map -> map.get("type").content())
-					.flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
-							.map(buffer -> new String(buffer.asByteBuffer().array())))
-					.map(type -> {
-						var split = type.split("/");
-						return new String[] { type, split[0], split[1] };
-					});
+    public Mono<ServerResponse> postImage(final ServerRequest serverRequest) {
+        var userIdMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest)).map(JWTManager.UserIdentity::id);
+        return userIdMono.flatMap(userId -> {
+            var multivalueMono = serverRequest.multipartData().map(MultiValueMap::toSingleValueMap);
+            var typeStringMono = multivalueMono.map(map -> map.get("type").content())
+                    .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
+                            .map(buffer -> new String(buffer.asByteBuffer().array())))
+                    .map(type -> {
+                        var split = type.split("/");
+                        return new String[]{type, split[0], split[1]};
+                    });
 
-			var nameStringMono = multivalueMono.map(map -> map.get("name").content())
-					.flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
-							.map(buffer -> new String(buffer.asByteBuffer().array())));
+            var nameStringMono = multivalueMono.map(map -> map.get("name").content())
+                    .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
+                            .map(buffer -> new String(buffer.asByteBuffer().array())));
 
-			var folderIdMono = multivalueMono.map(map -> map.get("folderId").content())
-					.flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
-							.map(buffer -> new String(buffer.asByteBuffer().array())));
+            var folderIdMono = multivalueMono.map(map -> map.get("folderId").content())
+                    .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
+                            .map(buffer -> new String(buffer.asByteBuffer().array())));
 
-			var fullImageMono = multivalueMono.map(map -> map.get("image").content()).flatMap(
-					bufferFlux -> DataBufferUtils.join(bufferFlux).map(buffer -> buffer.asByteBuffer().array()));
+            var fullImageMono = multivalueMono.map(map -> map.get("image").content()).flatMap(
+                    bufferFlux -> DataBufferUtils.join(bufferFlux).map(buffer -> buffer.asByteBuffer().array()));
 
-			return Mono.zip(nameStringMono, typeStringMono, folderIdMono, fullImageMono)
-					.flatMap(t4 -> imageService.addImage(t4.getT1(), t4.getT2(), t4.getT3(), t4.getT4(), userId)
-							.flatMap(imageSrc -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-									.body(BodyInserters.fromValue(imageSrc)))
-							.switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build()));
+            return Mono.zip(nameStringMono, typeStringMono, folderIdMono, fullImageMono)
+                    .flatMap(t4 -> imageService.addImage(t4.getT1(), t4.getT2(), t4.getT3(), t4.getT4(), userId)
+                            .flatMap(imageSrc -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                                    .body(BodyInserters.fromValue(imageSrc)))
+                            .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build()));
 
-		}).switchIfEmpty(ServerResponse.status(HttpStatus.UNAUTHORIZED).build());
-	}
+        }).switchIfEmpty(ServerResponse.status(HttpStatus.UNAUTHORIZED).build());
+    }
 
-	public Mono<ServerResponse> moveImages(final ServerRequest serverRequest) {
-		String folderId = serverRequest.pathVariable("folderId");
-		var imageSrcModelFlux = serverRequest.bodyToFlux(ImageSrcModel.class).cache();
-		return imageSrcModelFlux
-				.map(image -> ImageSrcModel.builder().id(image.getId()).parentFolderId(folderId).build())
-				.flatMap(imageService::updateImageSrc).collectList()
-				.flatMap(images -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-						.body(BodyInserters.fromValue(images)))
-				.switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
-	}
+    public Mono<ServerResponse> moveImages(final ServerRequest serverRequest) {
+        String folderId = serverRequest.pathVariable("folderId");
+        var imageSrcModelFlux = serverRequest.bodyToFlux(ImageSrcModel.class).cache();
+        return imageSrcModelFlux
+                .map(image -> ImageSrcModel.builder().id(image.getId()).parentFolderId(folderId).build())
+                .flatMap(imageService::updateImageSrc).collectList()
+                .flatMap(images -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(images)))
+                .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
+    }
 
-	public Mono<ServerResponse> deleteImages(final ServerRequest serverRequest) {
-		var userId = jwtManager.getUserIdentity(serverRequest).id();
-		var images = serverRequest.bodyToFlux(ImageSrcModel.class)
-				.filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId)).cache();
-		var deletedTags = images.flatMap(
-				image -> Flux.fromIterable(image.getTags()).flatMap(tag -> tagService.getTag(tag, image.getUserId()))
-						.flatMap(tag -> tagService.deleteTagImages(tag, List.of(image.getId()))));
-		var deletedImages = images.flatMap(imageService::deleteImage).cache();
-		return deletedTags.thenMany(deletedImages).collectList()
-				.flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-						.body(BodyInserters.fromValue(image)))
-				.switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
-	}
+    public Mono<ServerResponse> deleteImages(final ServerRequest serverRequest) {
+        var userId = jwtManager.getUserIdentity(serverRequest).id();
+        var images = serverRequest.bodyToFlux(ImageSrcModel.class)
+                .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId)).cache();
+        var deletedTags = images.flatMap(
+                image -> Flux.fromIterable(image.getTags()).flatMap(tag -> tagService.getTag(tag, image.getUserId()))
+                        .flatMap(tag -> tagService.deleteTagImages(tag, List.of(image.getId()))));
+        var deletedImages = images.flatMap(imageService::deleteImage).cache();
+        return deletedTags.thenMany(deletedImages).collectList()
+                .flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(image)))
+                .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
+    }
 
-	public Mono<ServerResponse> deleteImage(final ServerRequest serverRequest) {
-		var userId = jwtManager.getUserIdentity(serverRequest).id();
-		return serverRequest.bodyToMono(ImageSrcModel.class)
-				.filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId)).flatMap(imageService::deleteImage)
-				.flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-						.body(BodyInserters.fromValue(image)))
-				.switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
-	}
+    public Mono<ServerResponse> deleteImage(final ServerRequest serverRequest) {
+        var userId = jwtManager.getUserIdentity(serverRequest).id();
+        return serverRequest.bodyToMono(ImageSrcModel.class)
+                .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId)).flatMap(imageService::deleteImage)
+                .flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(image)))
+                .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
+    }
 
 }
