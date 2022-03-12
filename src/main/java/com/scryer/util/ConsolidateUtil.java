@@ -1,6 +1,4 @@
-package com.scryer.endpoint.service.tag;
-
-import com.scryer.endpoint.service.HasTags;
+package com.scryer.util;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,21 +7,20 @@ import java.util.Set;
 
 public final class ConsolidateUtil {
 
-	public static <T extends HasTags> List<String> getCombinedTags(final HasTags item, final Collection<String> tags) {
-		Set<String> newTags = new HashSet<>(tags.size() + item.getTags().size());
-		newTags.addAll(tags);
-		newTags.addAll(item.getTags());
+	public static List<String> getCombined(final Collection<String> current, final Collection<String> toAdd) {
+		Set<String> combined = new HashSet<>();
+		combined.addAll(current);
+		combined.addAll(toAdd);
 
-		return List.copyOf(newTags);
+		return List.copyOf(combined);
 	}
 
-	public static <T extends HasTags> List<String> getSubtractedTags(final HasTags item,
-			final Collection<String> tags) {
-		Set<String> newTags = new HashSet<>(tags.size() + item.getTags().size());
-		newTags.addAll(item.getTags());
-		newTags.removeAll(tags);
+	public static List<String> getSubtracted(final Collection<String> current, final Collection<String> toRemove) {
+		Set<String> combined = new HashSet<>();
+		combined.addAll(current);
+		combined.removeAll(toRemove);
 
-		return List.copyOf(newTags);
+		return List.copyOf(combined);
 	}
 
 }

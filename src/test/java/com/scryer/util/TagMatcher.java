@@ -4,6 +4,7 @@ import com.scryer.endpoint.service.tag.TagModel;
 import org.mockito.ArgumentMatcher;
 
 import java.util.Objects;
+import java.util.Set;
 
 public class TagMatcher implements ArgumentMatcher<TagModel> {
 
@@ -16,8 +17,8 @@ public class TagMatcher implements ArgumentMatcher<TagModel> {
 	@Override
 	public boolean matches(final TagModel right) {
 		return right != null && Objects.equals(left.getName(), right.getName())
-				&& Objects.equals(left.getImageIds(), right.getImageIds())
-				&& Objects.equals(left.getImageRankingIds(), right.getImageRankingIds())
+				&& Objects.equals(Set.copyOf(left.getImageIds()),Set.copyOf( right.getImageIds()))
+				&& Objects.equals(Set.copyOf(left.getImageRankingIds()), Set.copyOf(right.getImageRankingIds()))
 				&& Objects.equals(left.getUserId(), right.getUserId());
 	}
 

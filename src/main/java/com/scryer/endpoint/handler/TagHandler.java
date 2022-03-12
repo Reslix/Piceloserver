@@ -77,9 +77,12 @@ public class TagHandler {
         var imageIdMono = requestMono.map(UpdateImageSrcTagsRequest::imageId).cache();
         var imageSrcMono = imageIdMono.flatMap(imageService::getImageSrc);
         var tagsMono = requestMono.map(UpdateImageSrcTagsRequest::tags).cache();
-        var existingTagsFlux = tagsMono.flatMapIterable(list -> list).flatMap(tag -> tagService.getTag(tag, userId));
+        var existingTagsFlux = tagsMono.flatMapIterable(list -> list)
+                .flatMap(tag -> tagService.getTag(tag, userId));
         var newTagsFlux = tagsMono.flatMapIterable(list -> list)
-                .filterWhen(tag -> tagService.getTag(tag, userId).map(t -> false).defaultIfEmpty(true))
+                .filterWhen(tag -> tagService.getTag(tag, userId)
+                        .map(t -> false)
+                        .defaultIfEmpty(true))
                 .flatMap(tag -> tagService.addNewTag(tag, userId));
         var tagsFlux = Flux.concat(existingTagsFlux, newTagsFlux);
         var updatedTagsMono = Flux.zip(tagsFlux, imageIdMono.map(List::of).repeat(), tagService::updateTagImageIds)
@@ -104,8 +107,9 @@ public class TagHandler {
         var imageIdMono = requestMono.map(DeleteImageSrcTagsRequest::imageId).cache();
         var tagsFlux = tagNamesMono.flatMapIterable(list -> list).flatMap(tag -> tagService.getTag(tag, userId));
         var imageMono = imageIdMono.flatMap(imageService::getImageSrc);
-        var deletedTagsMono = Flux
-                .zip(tagsFlux, imageMono.repeat().map(ImageSrcModel::getId).map(List::of), tagService::deleteTagImages)
+        var deletedTagsMono = Flux.zip(tagsFlux, imageMono.repeat()
+                        .map(ImageSrcModel::getId)
+                        .map(List::of), tagService::deleteTagImages)
                 .flatMap(tag -> tag)
                 .filter(tag -> tag.getImageRankingIds().size() == 0 && tag.getImageIds().size() == 0)
                 .map(TagModel::getName).collectList();

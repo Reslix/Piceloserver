@@ -13,6 +13,7 @@ import com.scryer.endpoint.service.tag.TagModel;
 import com.scryer.endpoint.service.user.UserModel;
 import com.scryer.util.ImageSrcMatcher;
 import com.scryer.util.TagMatcher;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -20,6 +21,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -67,12 +69,23 @@ class TagHandlerIntegrationTest {
     @Autowired
     private WebTestClient testClient;
 
+    @Autowired
+    private ReactiveRedisTemplate<String, TagModel> tagRedisTemplate;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     void beforeEach() {
         Hooks.onOperatorDebug();
         Mockito.clearInvocations(jwtManager);
+    }
+
+    @AfterEach
+    void afterEac() {
+        tagTable.scan().items().stream().map(item -> tagTable.deleteItem(item));
+        imageTable.scan().items().stream().map(item -> imageTable.deleteItem(item));
+        userTable.scan().items().stream().map(item -> userTable.deleteItem(item));
+        tagRedisTemplate.scan().map(tag -> tagRedisTemplate.delete(tag)).collectList().block();
     }
 
     @Test
@@ -107,6 +120,10 @@ class TagHandlerIntegrationTest {
 
     @Test
     void testUpdateTagImageSrcs_AddTwo() throws IOException {
+        TagModel tag1Before = TagModel.builder().name("tag1").userId("1").id("1").imageRankingIds(List.of())
+                .imageIds(List.of()).build();
+        TagModel tag2Before = TagModel.builder().name("tag2").userId("1").id("2").imageRankingIds(List.of())
+                .imageIds(List.of()).build();
         TagModel tag1After = TagModel.builder().name("tag1").userId("1").id("1")
                 .imageIds(List.of("image1", "image2", "image3")).imageRankingIds(List.of()).build();
         TagModel tag2After = TagModel.builder().name("tag2").userId("1").id("2").imageIds(List.of("image1", "image3"))
@@ -137,8 +154,8 @@ class TagHandlerIntegrationTest {
                               .fromValue(new TagHandler.UpdateTagImageSrcsRequest(List.of("image1", "image3"), "tag2")))
                 .exchange().expectStatus().isOk().expectBody().returnResult();
         EntityExchangeResult<byte[]> result2Bytes = testClient.put().uri("/api/image/tag/tag2")
-                .body(BodyInserters
-                              .fromValue(new TagHandler.UpdateTagImageSrcsRequest(List.of("image1", "image3"), "tag2")))
+                .body(BodyInserters.fromValue(new TagHandler.UpdateTagImageSrcsRequest(List.of("image1", "image3"),
+                                                                                       "tag2")))
                 .exchange().expectStatus().isOk().expectBody().returnResult();
 
         List<ImageSrcModel> result1 = mapper.readValue(result1Bytes.getResponseBody(),
@@ -158,12 +175,6 @@ class TagHandlerIntegrationTest {
         assertTrue(new ImageSrcMatcher(image3Updated).matches(imageTable.getItem(image3)));
         assertTrue(new TagMatcher(tag1After).matches(tag1Result));
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
-        tagTable.deleteItem(tag1Result);
-        tagTable.deleteItem(tag2Result);
-        userTable.deleteItem(user1);
-        imageTable.deleteItem(result2.get(0));
-        imageTable.deleteItem(result1.get(1));
-        imageTable.deleteItem(result2.get(1));
     }
 
     @Test
@@ -192,9 +203,10 @@ class TagHandlerIntegrationTest {
                 .exchange().expectStatus().isOk().expectBody().returnResult();
 
         EntityExchangeResult<byte[]> result2Bytes = testClient.put().uri("/api/tag/image/image1")
-                .body(BodyInserters
-                              .fromValue(new TagHandler.UpdateImageSrcTagsRequest("image1",
-                                                                                  List.of("tag1", "tag2", "tag3"))))
+                .body(BodyInserters.fromValue(new TagHandler.UpdateImageSrcTagsRequest("image1",
+                                                                                       List.of("tag1",
+                                                                                               "tag2",
+                                                                                               "tag3"))))
                 .exchange().expectStatus().isOk().expectBody().returnResult();
 
         ImageSrcModel result1 = mapper.readValue(result1Bytes.getResponseBody(), ImageSrcModel.class);
@@ -207,13 +219,6 @@ class TagHandlerIntegrationTest {
         assertTrue(new TagMatcher(tag1After).matches(tag1Result));
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
         assertTrue(new TagMatcher(tag3After).matches(tag3Result));
-
-        tagTable.deleteItem(tag1Result);
-        tagTable.deleteItem(tag2Result);
-        tagTable.deleteItem(tag3Result);
-        userTable.deleteItem(user1);
-        imageTable.deleteItem(result1);
-        imageTable.deleteItem(result2);
     }
 
     @Test
@@ -246,8 +251,8 @@ class TagHandlerIntegrationTest {
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
 
         EntityExchangeResult<byte[]> resultBytes = testClient.method(HttpMethod.DELETE).uri("/api/image/tag/")
-                .body(BodyInserters
-                              .fromValue(new TagHandler.DeleteImageSrcTagsRequest("image1", List.of("tag1", "tag3"))))
+                .body(BodyInserters.fromValue(new TagHandler.DeleteImageSrcTagsRequest("image1",
+                                                                                       List.of("tag1", "tag3"))))
                 .exchange().expectStatus().isOk().expectBody().returnResult();
 
         ImageSrcModel result1 = mapper.readValue(resultBytes.getResponseBody(), ImageSrcModel.class);
@@ -260,12 +265,6 @@ class TagHandlerIntegrationTest {
         assertNull(tag1Result);
         assertTrue(new TagMatcher(tag2After).matches(tag2Result));
         assertTrue(new TagMatcher(tag3After).matches(tag3Result));
-
-        tagTable.deleteItem(tag2Result);
-        tagTable.deleteItem(tag3Result);
-        userTable.deleteItem(user1);
-        imageTable.deleteItem(result1);
-        imageTable.deleteItem(result2);
     }
 
     @Test
@@ -303,8 +302,8 @@ class TagHandlerIntegrationTest {
         when(jwtManager.getUserIdentity(any(ServerRequest.class))).thenReturn(new JWTManager.UserIdentity("test", "1"));
 
         EntityExchangeResult<byte[]> result1Bytes = testClient.method(HttpMethod.DELETE).uri("/api/tag/image")
-                .body(BodyInserters
-                              .fromValue(new TagHandler.DeleteTagImageSrcsRequest(List.of("image1", "image3"), "tag1")))
+                .body(BodyInserters.fromValue(new TagHandler.DeleteTagImageSrcsRequest(List.of("image1", "image3"),
+                                                                                       "tag1")))
                 .exchange().expectStatus().isOk().expectBody().returnResult();
 
         List<ImageSrcModel> result1 = mapper.readValue(result1Bytes.getResponseBody(),
@@ -328,5 +327,4 @@ class TagHandlerIntegrationTest {
         imageTable.deleteItem(image2);
         imageTable.deleteItem(image3);
     }
-
 }
