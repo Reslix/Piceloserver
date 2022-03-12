@@ -88,7 +88,9 @@ class TagDynamoDBAdapter implements TagDBAdapter {
 
     @Override
     public Mono<TagModel> deleteTag(final TagModel tag) {
-        return tagRedisTemplate.opsForHash().delete(tag.getUserId() + tag.getName())
-                .then(Mono.justOrEmpty(tagTable.deleteItem(tag)));
+        return tagRedisTemplate.opsForHash()
+                .delete(tag.getUserId() + tag.getName())
+                .thenReturn(tag)
+                .map(tagTable::deleteItem);
     }
 }

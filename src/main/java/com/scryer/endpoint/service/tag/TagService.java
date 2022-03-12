@@ -22,7 +22,6 @@ public class TagService {
 
     @Autowired
     public TagService(final TagDBAdapter tagDBAdapter) {
-
         this.tagDBAdapter = tagDBAdapter;
     }
 
