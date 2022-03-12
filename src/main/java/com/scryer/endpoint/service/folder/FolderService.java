@@ -65,7 +65,10 @@ public class FolderService {
         return Flux.fromStream(this.folderTable.index("userId_index")
                                        .query(queryEnhancedRequest)
                                        .stream()
-                                       .flatMap(page -> page.items().stream())).parallel().map(this.folderTable::getItem).sequential();
+                                       .flatMap(page -> page.items().stream()))
+                .parallel()
+                .map(this.folderTable::getItem)
+                .sequential();
     }
 
     public Mono<FolderModel> getFolderById(final String folderId) {
@@ -73,8 +76,10 @@ public class FolderService {
     }
 
     public Mono<FolderModel> updateFolder(final FolderModel folder) {
-        return Mono.just(folderTable.updateItem(
-                UpdateItemEnhancedRequest.builder(FolderModel.class).item(folder).ignoreNulls(true).build()));
+        return Mono.just(folderTable.updateItem(UpdateItemEnhancedRequest.builder(FolderModel.class)
+                                                        .item(folder)
+                                                        .ignoreNulls(true)
+                                                        .build()));
     }
 
     public Mono<FolderModel> addChildToParent(final FolderModel child) {
