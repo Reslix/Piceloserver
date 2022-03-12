@@ -1,5 +1,6 @@
 package com.scryer.endpoint.configuration;
 
+import com.scryer.endpoint.service.imagesrc.ImageSrcModel;
 import com.scryer.endpoint.service.tag.TagModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +21,6 @@ import java.net.URI;
 public class RedisConfiguration {
 
     @Bean
-    @Primary
     public ReactiveRedisTemplate<String, TagModel> tagRedisTemplate(final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
         RedisSerializationContext<String, TagModel> context = RedisSerializationContext
                 .<String, TagModel>newSerializationContext().hashKey(new StringRedisSerializer())
@@ -30,7 +30,15 @@ public class RedisConfiguration {
     }
 
     @Bean
-    @Primary
+    public ReactiveRedisTemplate<String, ImageSrcModel> imageRedisTemplate(final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
+        RedisSerializationContext<String, ImageSrcModel> context = RedisSerializationContext
+                .<String, ImageSrcModel>newSerializationContext().hashKey(new StringRedisSerializer())
+                .hashValue(new Jackson2JsonRedisSerializer<>(ImageSrcModel.class)).key(new StringRedisSerializer())
+                .value(new Jackson2JsonRedisSerializer<>(ImageSrcModel.class)).build();
+        return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, context);
+    }
+
+    @Bean
     public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory(@Qualifier("redisUri") final URI redisUri,
                                                                          @Qualifier("awsSecretAccessKey")
                                                                          final String awsSecretAccessKey) {
