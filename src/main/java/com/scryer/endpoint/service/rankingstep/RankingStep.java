@@ -1,42 +1,39 @@
 package com.scryer.endpoint.service.rankingstep;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.scryer.endpoint.service.DynamoDBTableModel;
-import com.scryer.endpoint.service.HasTags;
-import com.scryer.endpoint.service.folder.FolderBaseIdentifierConverter;
-import com.scryer.endpoint.service.imagesrc.ImageSrcModel;
+import com.scryer.endpoint.service.HasId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 @Getter
 @Builder
 @AllArgsConstructor
 @ToString
 @DynamoDbImmutable(builder = RankingStep.RankingStepBuilder.class)
-public final class RankingStep implements DynamoDBTableModel {
+public final class RankingStep implements DynamoDBTableModel, HasId {
 
 	private final String id;
 
 	private final String userId;
 
+	private final String imageRankingId;
+
 	private final String name;
 
-	private final String dataSource;
+	private final String source;
 
-	private final List<StepDatum> dataTarget;
+	private final List<StepDatum> target;
 
-	private final String meta;
+	private final Map<String, String> meta;
 
 	@DynamoDbPartitionKey
 	public String getId() {
@@ -48,9 +45,14 @@ public final class RankingStep implements DynamoDBTableModel {
 		return this.userId;
 	}
 
+	@DynamoDbSecondaryPartitionKey(indexNames = {"imageRankingId_index"})
+	public String getImageRankingId() {
+		return this.imageRankingId;
+	}
+
 	@DynamoDbConvertedBy(StepDatumConverter.class)
-	public List<StepDatum> getDataTarget() {
-		return this.dataTarget;
+	public List<StepDatum> getTarget() {
+		return this.target;
 	}
 
 }
