@@ -5,7 +5,14 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -25,7 +32,10 @@ public class ImageResizeService {
 		var maxDimension = request.maxDimension();
 		return Mono.just(request.imageArray()).subscribeOn(scheduler).flatMap(image -> {
 			try {
-				BufferedImage original = ImageIO.read(new ByteArrayInputStream(image));
+				ImageReader reader = ImageIO.getImageReadersBySuffix(request.type()[2]).next();
+				reader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(image)));
+				IIOMetadata metadata = reader.getImageMetadata(0);
+				BufferedImage original = reader.read(0);
 				var height = original.getHeight();
 				var width = original.getWidth();
 				double ratio;
@@ -47,7 +57,16 @@ public class ImageResizeService {
 					graphics2D.dispose();
 				}
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				ImageIO.write(resized, request.type()[2], out);
+				ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(out);
+				ImageWriter writer = ImageIO.getImageWritersBySuffix(request.type()[2]).next();
+				writer.setOutput(imageOutputStream);
+				ImageWriteParam param = writer.getDefaultWriteParam();
+				param.setCompressionMode(ImageWriteParam.MODE_COPY_FROM_METADATA);
+				if (param instanceof JPEGImageWriteParam) {
+					((JPEGImageWriteParam) param).setOptimizeHuffmanTables(true);
+				}
+				writer.write(null, new IIOImage(resized,null, metadata), param);
+				writer.dispose();
 				return Mono.just(out.toByteArray());
 			}
 			catch (IOException e) {

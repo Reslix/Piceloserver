@@ -82,10 +82,9 @@ public class UserService {
                 .email(email)
                 .build();
 
-        return Mono
-                .justOrEmpty(userTable.putItemWithResponse(PutItemEnhancedRequest.builder(User.class)
-                                                                   .item(userModel)
-                                                                   .build()))
+        return Mono.justOrEmpty(userTable.putItemWithResponse(PutItemEnhancedRequest.builder(User.class)
+                                                                      .item(userModel)
+                                                                      .build()))
                 .then(Mono.justOrEmpty(userTable.getItem(Key.builder().partitionValue(username).build())));
     }
 

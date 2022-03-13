@@ -35,7 +35,6 @@ public class ImageUploadService {
     public Mono<String> deleteImage(final String path) {
         var splitPath = path.split("/");
         var key = splitPath[splitPath.length - 2] + "/" + splitPath[splitPath.length - 1];
-        System.out.println(key);
         return Mono.just(s3Client.deleteObject(DeleteObjectRequest.builder().bucket(s3BucketName).key(key).build())
                                  .toString());
     }
