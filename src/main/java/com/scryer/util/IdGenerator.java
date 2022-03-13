@@ -18,7 +18,7 @@ public final class IdGenerator {
 	public static String uniqueIdForTable(final DynamoDbTable<? extends HasId> table, final Boolean isPrimaryKey) {
 		boolean found = true;
 		for (int attempts = 0; attempts < 5; attempts++) {
-			String candidate = String.valueOf(ThreadLocalRandom.current().nextLong(1L, Long.MAX_VALUE));
+			String candidate = randomId();
 			if (isPrimaryKey) {
 				found = table.getItem(Key.builder().partitionValue(candidate).build()) != null;
 			}
@@ -38,7 +38,7 @@ public final class IdGenerator {
 	public static String uniqueIdForIndex(final DynamoDbIndex<? extends HasId> index, final Boolean isPrimaryKey) {
 		boolean found = true;
 		for (int attempts = 0; attempts < 5; attempts++) {
-			String candidate = String.valueOf(ThreadLocalRandom.current().nextLong(1L, Long.MAX_VALUE));
+			String candidate = randomId();
 
 			var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(candidate).build());
 			var queryEnhancedRequest = QueryEnhancedRequest.builder().queryConditional(queryConditional).build();
