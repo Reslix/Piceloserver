@@ -61,14 +61,7 @@ public class DynamoDBTableConfiguration {
         var projection = Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes("id").build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder().indexName("userId_index").projection(projection)
                 .build();
-        var imageRankingIdIndex = EnhancedGlobalSecondaryIndex.builder()
-                .indexName("imageRankingId_index")
-                .projection(projection)
-                .build();
-
-        var request = CreateTableEnhancedRequest.builder()
-                .globalSecondaryIndices(userIdIndex, imageRankingIdIndex)
-                .build();
+        var request = CreateTableEnhancedRequest.builder().globalSecondaryIndices(userIdIndex).build();
         return TableInitializer.getOrCreateTable(client, ImageRanking.class, request);
     }
 
@@ -77,8 +70,13 @@ public class DynamoDBTableConfiguration {
         var projection = Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes("id").build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder().indexName("userId_index").projection(projection)
                 .build();
-
-        var request = CreateTableEnhancedRequest.builder().globalSecondaryIndices(userIdIndex).build();
+        var imageRankingIndex = EnhancedGlobalSecondaryIndex.builder()
+                .indexName("imageRankingId_index")
+                .projection(projection)
+                .build();
+        var request = CreateTableEnhancedRequest.builder()
+                .globalSecondaryIndices(userIdIndex, imageRankingIndex)
+                .build();
         return TableInitializer.getOrCreateTable(client, RankingStep.class, request);
     }
 
