@@ -51,4 +51,13 @@ public final class IdGenerator {
 		throw new RuntimeException("Could not find unique ID");
 	}
 
+	private static String randomId() {
+		String symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		StringBuilder str = new StringBuilder();
+		for (int i = 0; i < 16; i++) {
+			str.append(symbols.charAt(ThreadLocalRandom.current().nextInt(symbols.length())));
+		}
+		return str.toString();
+
+	}
 }

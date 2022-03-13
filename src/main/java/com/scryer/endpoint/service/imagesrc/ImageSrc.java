@@ -36,6 +36,8 @@ public final class ImageSrcModel implements DynamoDBTableModel, HasId {
 	private final String type;
 
 	private final String size;
+	
+	private final List<String> tags;
 
 	private final Map<String, ImageBaseIdentifier> alternateSizes;
 
