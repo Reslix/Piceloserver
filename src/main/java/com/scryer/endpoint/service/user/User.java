@@ -10,12 +10,14 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
+import java.util.List;
+
 @Getter
 @Builder
 @ToString
 @AllArgsConstructor
-@DynamoDbImmutable(builder = UserModel.UserModelBuilder.class)
-public final class UserModel implements DynamoDBTableModel, HasId {
+@DynamoDbImmutable(builder = User.UserBuilder.class)
+public final class User implements DynamoDBTableModel, HasId {
 
 	private final String id;
 

@@ -1,12 +1,12 @@
 package com.scryer.endpoint.configuration;
 
-import com.scryer.endpoint.service.folder.FolderModel;
-import com.scryer.endpoint.service.imagerankings.ImageRankingModel;
-import com.scryer.endpoint.service.imagesrc.ImageSrcModel;
+import com.scryer.endpoint.service.folder.Folder;
+import com.scryer.endpoint.service.imagerankings.ImageRanking;
+import com.scryer.endpoint.service.imagesrc.ImageSrc;
 import com.scryer.endpoint.service.rankingstep.RankingStep;
 import com.scryer.endpoint.service.tag.TagModel;
 import com.scryer.endpoint.service.userdetails.UserAccessModel;
-import com.scryer.endpoint.service.user.UserModel;
+import com.scryer.endpoint.service.user.User;
 import com.scryer.util.TableInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 public class DynamoDBTableConfiguration {
 
     @Bean
-    public DynamoDbTable<UserModel> userTable(final DynamoDbEnhancedClient client) {
+    public DynamoDbTable<User> userTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
                 .indexName("userId_index")
@@ -30,11 +30,11 @@ public class DynamoDBTableConfiguration {
         var emailIndex = EnhancedGlobalSecondaryIndex.builder().indexName("email_index").projection(projection).build();
 
         var request = CreateTableEnhancedRequest.builder().globalSecondaryIndices(userIdIndex, emailIndex).build();
-        return TableInitializer.getOrCreateTable(client, UserModel.class, request);
+        return TableInitializer.getOrCreateTable(client, User.class, request);
     }
 
     @Bean
-    public DynamoDbTable<FolderModel> folderTable(final DynamoDbEnhancedClient client) {
+    public DynamoDbTable<Folder> folderTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder()
                 .indexName("userId_index")
@@ -42,28 +42,34 @@ public class DynamoDBTableConfiguration {
                 .build();
 
         var request = CreateTableEnhancedRequest.builder().globalSecondaryIndices(userIdIndex).build();
-        return TableInitializer.getOrCreateTable(client, FolderModel.class, request);
+        return TableInitializer.getOrCreateTable(client, Folder.class, request);
     }
 
     @Bean
-    public DynamoDbTable<ImageSrcModel> imageSrcTable(final DynamoDbEnhancedClient client) {
+    public DynamoDbTable<ImageSrc> imageSrcTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.KEYS_ONLY).build();
         var folderIndex = EnhancedGlobalSecondaryIndex.builder()
                 .indexName("folder_index")
                 .projection(projection)
                 .build();
         var request = CreateTableEnhancedRequest.builder().globalSecondaryIndices(folderIndex).build();
-        return TableInitializer.getOrCreateTable(client, ImageSrcModel.class, request);
+        return TableInitializer.getOrCreateTable(client, ImageSrc.class, request);
     }
 
     @Bean
-    public DynamoDbTable<ImageRankingModel> imageRankingTable(final DynamoDbEnhancedClient client) {
+    public DynamoDbTable<ImageRanking> imageRankingTable(final DynamoDbEnhancedClient client) {
         var projection = Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes("id").build();
         var userIdIndex = EnhancedGlobalSecondaryIndex.builder().indexName("userId_index").projection(projection)
                 .build();
+        var imageRankingIdIndex = EnhancedGlobalSecondaryIndex.builder()
+                .indexName("imageRankingId_index")
+                .projection(projection)
+                .build();
 
-        var request = CreateTableEnhancedRequest.builder().globalSecondaryIndices(userIdIndex).build();
-        return TableInitializer.getOrCreateTable(client, ImageRankingModel.class, request);
+        var request = CreateTableEnhancedRequest.builder()
+                .globalSecondaryIndices(userIdIndex, imageRankingIdIndex)
+                .build();
+        return TableInitializer.getOrCreateTable(client, ImageRanking.class, request);
     }
 
     @Bean

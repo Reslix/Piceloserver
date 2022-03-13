@@ -4,8 +4,8 @@ import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.folder.FolderService;
 import com.scryer.endpoint.service.userdetails.ReactiveUserAccessService;
 import com.scryer.endpoint.service.user.UserService;
-import com.scryer.endpoint.service.folder.FolderModel;
-import com.scryer.endpoint.service.user.UserModel;
+import com.scryer.endpoint.service.folder.Folder;
+import com.scryer.endpoint.service.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -70,9 +70,9 @@ public class UserHandler {
         return validRecord.flatMap(record -> {
             var validUserId = userService.getUniqueId(record.username(), record.email());
 
-            var folderMono = validUserId.map(UserModel::getId).flatMap(folderService::createRootFolder);
+            var folderMono = validUserId.map(User::getId).flatMap(folderService::createRootFolder);
 
-            var folderIdMono = folderMono.map(FolderModel::getId);
+            var folderIdMono = folderMono.map(Folder::getId);
 
             var userMono = Mono.zip(validUserId, folderIdMono)
                     .flatMap(data -> userService.addUser(record, data.getT1().getId(), data.getT2()));
@@ -89,7 +89,7 @@ public class UserHandler {
         var usernameMono = Mono.justOrEmpty(jwtManager.getUserIdentity(serverRequest))
                 .map(JWTManager.UserIdentity::username);
         return usernameMono
-                .flatMap(username -> serverRequest.bodyToMono(UserModel.class)
+                .flatMap(username -> serverRequest.bodyToMono(User.class)
                         .filter(userModel -> username.equals(userModel.getUsername())).flatMap(userService::updateUser)
                         .flatMap(userModel -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
                                 .body(BodyInserters.fromValue(userModel)))

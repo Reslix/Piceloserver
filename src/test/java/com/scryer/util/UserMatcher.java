@@ -1,20 +1,20 @@
 package com.scryer.util;
 
-import com.scryer.endpoint.service.user.UserModel;
+import com.scryer.endpoint.service.user.User;
 import org.mockito.ArgumentMatcher;
 
 import java.util.Objects;
 
-public class UserMatcher implements ArgumentMatcher<UserModel> {
+public class UserMatcher implements ArgumentMatcher<User> {
 
-	private final UserModel left;
+	private final User left;
 
-	public UserMatcher(final UserModel left) {
+	public UserMatcher(final User left) {
 		this.left = left;
 	}
 
 	@Override
-	public boolean matches(final UserModel right) {
+	public boolean matches(final User right) {
 		return right != null && Objects.equals(left.getUsername(), right.getUsername())
 				&& Objects.equals(left.getId(), right.getId())
 				&& Objects.equals(left.getDisplayName(), right.getDisplayName())

@@ -15,23 +15,23 @@ public class ImageService {
         this.imageDBAdapter = imageDBAdapter;
     }
 
-    public Mono<ImageSrcModel> getImageSrc(final String imageSrcId) {
+    public Mono<ImageSrc> getImageSrc(final String imageSrcId) {
         return imageDBAdapter.getImageSrc(imageSrcId);
     }
 
-    public Flux<ImageSrcModel> getImageSrcForFolder(final String folderId) {
+    public Flux<ImageSrc> getImageSrcForFolder(final String folderId) {
         return imageDBAdapter.getImageSrcForFolder(folderId);
     }
 
-    public Mono<ImageSrcModel> updateImageSrc(final ImageSrcModel imageSrc) {
+    public Mono<ImageSrc> updateImageSrc(final ImageSrc imageSrc) {
         return imageDBAdapter.updateImageSrc(imageSrc);
     }
 
-    public Mono<ImageSrcModel> addImageSrc(final ImageSrcModel imageSrc) {
+    public Mono<ImageSrc> addImageSrc(final ImageSrc imageSrc) {
         return imageDBAdapter.addImageSrc(imageSrc);
     }
 
-    public Mono<ImageSrcModel> deleteImage(final ImageSrcModel imageSrc) {
+    public Mono<ImageSrc> deleteImage(final ImageSrc imageSrc) {
         return imageDBAdapter.deleteImage(imageSrc);
     }
 

@@ -1,19 +1,18 @@
 package com.scryer.endpoint.service.imagesrc;
 
-import com.scryer.util.IdGenerator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 interface ImageDBAdapter {
-    Mono<ImageSrcModel> getImageSrc(final String imageSrcId);
+    Mono<ImageSrc> getImageSrc(final String imageSrcId);
 
-    Flux<ImageSrcModel> getImageSrcForFolder(final String folderId);
+    Flux<ImageSrc> getImageSrcForFolder(final String folderId);
 
-    Mono<ImageSrcModel> updateImageSrc(final ImageSrcModel imageSrc);
+    Mono<ImageSrc> updateImageSrc(final ImageSrc imageSrc);
 
-    Mono<ImageSrcModel> addImageSrc(final ImageSrcModel imageSrc);
+    Mono<ImageSrc> addImageSrc(final ImageSrc imageSrc);
 
-    Mono<ImageSrcModel> deleteImage(final ImageSrcModel imageSrc);
+    Mono<ImageSrc> deleteImage(final ImageSrc imageSrc);
 
     Mono<String> getUniqueId();
 }

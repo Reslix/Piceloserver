@@ -3,7 +3,7 @@ package com.scryer.endpoint.handler;
 import com.scryer.endpoint.service.folder.FolderService;
 import com.scryer.endpoint.security.JWTManager;
 import com.scryer.endpoint.service.imagesrc.ImageService;
-import com.scryer.endpoint.service.folder.FolderModel;
+import com.scryer.endpoint.service.folder.Folder;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -29,7 +29,7 @@ public class FolderHandler {
     public Mono<ServerResponse> getFolderById(final ServerRequest serverRequest) {
         String folderId = serverRequest.pathVariable("folderId");
         return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromPublisher(folderService.getFolderById(folderId), FolderModel.class));
+                .body(BodyInserters.fromPublisher(folderService.getFolderById(folderId), Folder.class));
     }
 
     public Mono<ServerResponse> getFolderMapByUserId(final ServerRequest serverRequest) {
@@ -63,7 +63,7 @@ public class FolderHandler {
     public Mono<ServerResponse> moveFolder(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest);
         var folderId = serverRequest.pathVariable("folderId");
-        var folderMono = serverRequest.bodyToMono(FolderModel.class)
+        var folderMono = serverRequest.bodyToMono(Folder.class)
                 .filter(folder -> userId.id().equals(folder.getUserId())).cache();
         var newParentFolderIdsMono = folderService.getFolderById(folderId).flatMap(folder -> {
             var newParentFolders = folder.getFolders();
@@ -71,7 +71,7 @@ public class FolderHandler {
             newParentIds.add(folder.getId());
             return folderMono.map(child -> {
                 newParentFolders.add(child.getId());
-                return folderService.updateFolder(FolderModel.builder()
+                return folderService.updateFolder(Folder.builder()
                                                           .id(folder.getId())
                                                           .folders(newParentFolders)
                                                           .build());
@@ -83,7 +83,7 @@ public class FolderHandler {
                             .getFolderById(folderModel.getParentFolderIds()
                                                    .get(folderModel.getParentFolderIds().size() - 1));
                     return parentFolder.flatMap(parent -> folderService
-                            .updateFolder(FolderModel.builder()
+                            .updateFolder(Folder.builder()
                                                   .id(parent.getId())
                                                   .folders(parent.getFolders()
                                                                    .stream()
@@ -94,7 +94,7 @@ public class FolderHandler {
 
         return oldParentFolderMono.then(folderMono)
                 .zipWith(newParentFolderIdsMono)
-                .map(t2 -> FolderModel.builder().id(t2.getT1().getId()).parentFolderIds(t2.getT2()).build())
+                .map(t2 -> Folder.builder().id(t2.getT1().getId()).parentFolderIds(t2.getT2()).build())
                 .flatMap(folderService::updateFolder)
                 .flatMap(folderModel -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(folderModel)))
@@ -104,13 +104,13 @@ public class FolderHandler {
 
     public Mono<ServerResponse> deleteFolder(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest);
-        var verifiedFolderMono = serverRequest.bodyToMono(FolderModel.class)
+        var verifiedFolderMono = serverRequest.bodyToMono(Folder.class)
                 .filter(folder -> userId.id().equals(folder.getUserId())).cache();
         var parentFolderMono = verifiedFolderMono
                 .flatMap(folder -> folderService
                         .getFolderById(folder.getParentFolderIds().get(folder.getParentFolderIds().size() - 1)))
                 .cache();
-        var updatedFolderImagesFlux = verifiedFolderMono.map(FolderModel::getId)
+        var updatedFolderImagesFlux = verifiedFolderMono.map(Folder::getId)
                 .flatMapMany(imageService::getImageSrcForFolder).flatMap(imageService::deleteImage);
 
         var newParentFolderFoldersMono = Mono.zip(verifiedFolderMono, parentFolderMono,
@@ -120,7 +120,7 @@ public class FolderHandler {
                                                           .toList());
         var updatedParentFolderMono = Mono.zip(parentFolderMono, newParentFolderFoldersMono,
                                                (folder, newChildren) -> folderService
-                                                       .updateFolder(FolderModel.builder()
+                                                       .updateFolder(Folder.builder()
                                                                              .id(folder.getId())
                                                                              .folders(newChildren)
                                                                              .build()));

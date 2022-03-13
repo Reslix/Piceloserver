@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @ToString
 @AllArgsConstructor
-@DynamoDbImmutable(builder = Folder.FolderModelBuilder.class)
+@DynamoDbImmutable(builder = Folder.FolderBuilder.class)
 public final class Folder implements DynamoDBTableModel, HasId {
 
 	private final String id;

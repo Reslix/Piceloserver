@@ -14,8 +14,8 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
-@DynamoDbImmutable(builder = ImageRankingModel.ImageRankingModelBuilder.class)
-public final class ImageRankingModel implements DynamoDBTableModel, HasId {
+@DynamoDbImmutable(builder = ImageRanking.ImageRankingBuilder.class)
+public final class ImageRanking implements DynamoDBTableModel, HasId {
 
 	private final String id;
 
@@ -27,7 +27,7 @@ public final class ImageRankingModel implements DynamoDBTableModel, HasId {
 
 	private final Long createDate;
 
-	private final List<String> tags;
+	private final List<String> imageIds;
 
 	@DynamoDbPartitionKey
 	public String getId() {

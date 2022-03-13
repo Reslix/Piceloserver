@@ -5,10 +5,9 @@ import com.scryer.endpoint.service.imageresize.ImageResizeRequest;
 import com.scryer.endpoint.service.imageresize.ImageResizeService;
 import com.scryer.endpoint.service.imagesrc.ImageBaseIdentifier;
 import com.scryer.endpoint.service.imagesrc.ImageService;
-import com.scryer.endpoint.service.imagesrc.ImageSrcModel;
+import com.scryer.endpoint.service.imagesrc.ImageSrc;
 import com.scryer.endpoint.service.imageupload.ImageUploadRequest;
 import com.scryer.endpoint.service.imageupload.ImageUploadService;
-import com.scryer.endpoint.service.tag.TagService;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -84,13 +83,13 @@ public class ImageHandler {
                     var thumbnailLocation = Mono.zip(uniqueIdMono, thumbnailMono)
                             .flatMap(t2 -> imageUploadService
                                     .uploadImage(new ImageUploadRequest(t2.getT1(), "thumbnail", t2.getT2(), type)))
-                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrcModel.builder().id(id).build())
+                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
                                     .map(imageService::deleteImage));
 
                     var mediumLocation = Mono.zip(uniqueIdMono, mediumMono)
                             .flatMap(t2 -> imageUploadService
                                     .uploadImage(new ImageUploadRequest(t2.getT1(), "medium", t2.getT2(), type)))
-                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrcModel.builder().id(id).build())
+                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
                                     .map(imageService::deleteImage));
 
                     var fullImageLocation = uniqueIdMono
@@ -98,7 +97,7 @@ public class ImageHandler {
                                                                                                  "full",
                                                                                                  image,
                                                                                                  type)))
-                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrcModel.builder().id(id).build())
+                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
                                     .map(imageService::deleteImage));
 
                     return Mono.zip(uniqueIdMono,
@@ -108,7 +107,7 @@ public class ImageHandler {
                             .flatMap(t4_2 -> {
                                 var currentTime = System.currentTimeMillis();
                                 return imageService
-                                        .addImageSrc(ImageSrcModel
+                                        .addImageSrc(ImageSrc
                                                              .builder()
                                                              .id(t4_2.getT1())
                                                              .userId(userId)
@@ -139,9 +138,9 @@ public class ImageHandler {
     public Mono<ServerResponse> moveImages(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest).id();
         var folderId = serverRequest.pathVariable("folderId");
-        var imageSrcModelFlux = serverRequest.bodyToFlux(ImageSrcModel.class).cache();
+        var imageSrcModelFlux = serverRequest.bodyToFlux(ImageSrc.class).cache();
         return imageSrcModelFlux.filter(image -> image.getUserId().equals(userId))
-                .map(image -> ImageSrcModel.builder().id(image.getId()).parentFolderId(folderId).build())
+                .map(image -> ImageSrc.builder().id(image.getId()).parentFolderId(folderId).build())
                 .flatMap(imageService::updateImageSrc)
                 .collectList()
                 .flatMap(images -> ServerResponse.ok()
@@ -152,7 +151,7 @@ public class ImageHandler {
 
     public Mono<ServerResponse> deleteImages(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest).id();
-        var images = serverRequest.bodyToFlux(ImageSrcModel.class)
+        var images = serverRequest.bodyToFlux(ImageSrc.class)
                 .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
                 .cache();
         var deletedImages = images.flatMap(imageService::deleteImage).cache();
@@ -164,7 +163,7 @@ public class ImageHandler {
 
     public Mono<ServerResponse> deleteImage(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest).id();
-        return serverRequest.bodyToMono(ImageSrcModel.class)
+        return serverRequest.bodyToMono(ImageSrc.class)
                 .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
                 .flatMap(image -> imageUploadService.deleteImage(image.getSource().src())
                             .thenReturn(image)

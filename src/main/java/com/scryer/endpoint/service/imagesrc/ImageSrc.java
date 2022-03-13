@@ -2,7 +2,6 @@ package com.scryer.endpoint.service.imagesrc;
 
 import com.scryer.endpoint.service.DynamoDBTableModel;
 import com.scryer.endpoint.service.HasId;
-import com.scryer.endpoint.service.HasTags;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,8 +17,8 @@ import java.util.Map;
 @Getter
 @Builder
 @AllArgsConstructor
-@DynamoDbImmutable(builder = ImageSrcModel.ImageSrcModelBuilder.class)
-public final class ImageSrcModel implements DynamoDBTableModel, HasId {
+@DynamoDbImmutable(builder = ImageSrc.ImageSrcBuilder.class)
+public final class ImageSrc implements DynamoDBTableModel, HasId {
 
 	private final String id;
 
@@ -36,8 +35,6 @@ public final class ImageSrcModel implements DynamoDBTableModel, HasId {
 	private final String type;
 
 	private final String size;
-	
-	private final List<String> tags;
 
 	private final Map<String, ImageBaseIdentifier> alternateSizes;
 

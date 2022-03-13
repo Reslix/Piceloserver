@@ -19,14 +19,14 @@ import java.util.Map;
 @Service
 public class FolderService {
 
-    private final DynamoDbTable<FolderModel> folderTable;
+    private final DynamoDbTable<Folder> folderTable;
 
     @Autowired
-    public FolderService(final DynamoDbTable<FolderModel> folderTable) {
+    public FolderService(final DynamoDbTable<Folder> folderTable) {
         this.folderTable = folderTable;
     }
 
-    public Mono<FolderModel> createRootFolder(final String userId) {
+    public Mono<Folder> createRootFolder(final String userId) {
         return getFoldersByUserId(userId).filter(folder -> folder.getParentFolderIds().isEmpty()).next().map(item -> {
             Mono.error(new IllegalArgumentException("User already has folders"));
             return item;
@@ -34,10 +34,10 @@ public class FolderService {
                                  .switchIfEmpty(Mono.error(new IllegalArgumentException("Failed to create new folder"))));
     }
 
-    public Mono<FolderModel> createFolder(final NewFolderRequest request) {
+    public Mono<Folder> createFolder(final NewFolderRequest request) {
         String validId = IdGenerator.uniqueIdForTable(folderTable, true);
         Long currentTime = System.currentTimeMillis();
-        var newFolder = FolderModel.builder()
+        var newFolder = Folder.builder()
                 .id(validId)
                 .userId(request.userId)
                 .name(request.name)
@@ -47,18 +47,18 @@ public class FolderService {
                 .parentFolderIds(request.parentFolderIds)
                 .source(new FolderBaseIdentifier("origin", "self"))
                 .build();
-        var enhancedRequest = PutItemEnhancedRequest.builder(FolderModel.class).item(newFolder).build();
+        var enhancedRequest = PutItemEnhancedRequest.builder(Folder.class).item(newFolder).build();
         return Mono.fromCallable(() -> {
             folderTable.putItemWithResponse(enhancedRequest);
             return folderTable.getItem(Key.builder().partitionValue(validId).build());
         });
     }
 
-    public Mono<Map<String, FolderModel>> getFoldersMapByUserId(final String userId) {
-        return getFoldersByUserId(userId).collectMap(FolderModel::getId, folder -> folder);
+    public Mono<Map<String, Folder>> getFoldersMapByUserId(final String userId) {
+        return getFoldersByUserId(userId).collectMap(Folder::getId, folder -> folder);
     }
 
-    public Flux<FolderModel> getFoldersByUserId(final String userId) {
+    public Flux<Folder> getFoldersByUserId(final String userId) {
         var queryConditional = QueryConditional.keyEqualTo(Key.builder().partitionValue(userId).build());
         var queryEnhancedRequest = QueryEnhancedRequest.builder().queryConditional(queryConditional)
                 .attributesToProject().build();
@@ -71,32 +71,32 @@ public class FolderService {
                 .sequential();
     }
 
-    public Mono<FolderModel> getFolderById(final String folderId) {
+    public Mono<Folder> getFolderById(final String folderId) {
         return Mono.justOrEmpty(folderTable.getItem(Key.builder().partitionValue(folderId).build()));
     }
 
-    public Mono<FolderModel> updateFolder(final FolderModel folder) {
-        return Mono.just(folderTable.updateItem(UpdateItemEnhancedRequest.builder(FolderModel.class)
+    public Mono<Folder> updateFolder(final Folder folder) {
+        return Mono.just(folderTable.updateItem(UpdateItemEnhancedRequest.builder(Folder.class)
                                                         .item(folder)
                                                         .ignoreNulls(true)
                                                         .build()));
     }
 
-    public Mono<FolderModel> addChildToParent(final FolderModel child) {
+    public Mono<Folder> addChildToParent(final Folder child) {
         var parentId = child.getParentFolderIds().get(child.getParentFolderIds().size() - 1);
         var parentMono = getFolderById(parentId).cache();
-        return Mono.zip(parentMono, parentMono.map(FolderModel::getFolders), (parent, folders) -> {
+        return Mono.zip(parentMono, parentMono.map(Folder::getFolders), (parent, folders) -> {
             var newFolders = new ArrayList<>(folders);
             newFolders.add(child.getId());
-            return folderTable.updateItem(UpdateItemEnhancedRequest.builder(FolderModel.class)
-                                                  .item(FolderModel.builder().id(parentId).folders(newFolders).build())
+            return folderTable.updateItem(UpdateItemEnhancedRequest.builder(Folder.class)
+                                                  .item(Folder.builder().id(parentId).folders(newFolders).build())
                                                   .ignoreNulls(true)
                                                   .build());
 
         });
     }
 
-    public Mono<FolderModel> deleteFolder(final FolderModel folder) {
+    public Mono<Folder> deleteFolder(final Folder folder) {
         return Mono.just(folderTable.deleteItem(folder));
     }
 

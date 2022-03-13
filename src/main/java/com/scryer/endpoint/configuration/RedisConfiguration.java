@@ -1,11 +1,10 @@
 package com.scryer.endpoint.configuration;
 
-import com.scryer.endpoint.service.imagesrc.ImageSrcModel;
+import com.scryer.endpoint.service.imagesrc.ImageSrc;
 import com.scryer.endpoint.service.tag.TagModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
@@ -30,11 +29,11 @@ public class RedisConfiguration {
     }
 
     @Bean
-    public ReactiveRedisTemplate<String, ImageSrcModel> imageRedisTemplate(final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
-        RedisSerializationContext<String, ImageSrcModel> context = RedisSerializationContext
-                .<String, ImageSrcModel>newSerializationContext().hashKey(new StringRedisSerializer())
-                .hashValue(new Jackson2JsonRedisSerializer<>(ImageSrcModel.class)).key(new StringRedisSerializer())
-                .value(new Jackson2JsonRedisSerializer<>(ImageSrcModel.class)).build();
+    public ReactiveRedisTemplate<String, ImageSrc> imageRedisTemplate(final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
+        RedisSerializationContext<String, ImageSrc> context = RedisSerializationContext
+                .<String, ImageSrc>newSerializationContext().hashKey(new StringRedisSerializer())
+                .hashValue(new Jackson2JsonRedisSerializer<>(ImageSrc.class)).key(new StringRedisSerializer())
+                .value(new Jackson2JsonRedisSerializer<>(ImageSrc.class)).build();
         return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, context);
     }
 

@@ -15,21 +15,21 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 
 @Service
 class ImageDynamoDBAdapter implements ImageDBAdapter {
-    private final DynamoDbTable<ImageSrcModel> imageSrcTable;
-    private final ReactiveRedisTemplate<String, ImageSrcModel> imageRedisTemplate;
+    private final DynamoDbTable<ImageSrc> imageSrcTable;
+    private final ReactiveRedisTemplate<String, ImageSrc> imageRedisTemplate;
 
     @Autowired
-    ImageDynamoDBAdapter(final DynamoDbTable<ImageSrcModel> imageSrcTable,
-                         final ReactiveRedisTemplate<String, ImageSrcModel> imageRedisTemplate) {
+    ImageDynamoDBAdapter(final DynamoDbTable<ImageSrc> imageSrcTable,
+                         final ReactiveRedisTemplate<String, ImageSrc> imageRedisTemplate) {
         this.imageSrcTable = imageSrcTable;
         this.imageRedisTemplate = imageRedisTemplate;
     }
 
     @Override
-    public Mono<ImageSrcModel> getImageSrc(final String imageSrcId) {
+    public Mono<ImageSrc> getImageSrc(final String imageSrcId) {
         return imageRedisTemplate.opsForHash()
                 .get(imageSrcId, imageSrcId)
-                .cast(ImageSrcModel.class)
+                .cast(ImageSrc.class)
                 .switchIfEmpty(Mono.defer(() -> {
                     var imageSrc = imageSrcTable.getItem(software.amazon.awssdk.enhanced.dynamodb.Key.builder()
                                                                  .partitionValue(imageSrcId)
@@ -39,7 +39,7 @@ class ImageDynamoDBAdapter implements ImageDBAdapter {
     }
 
     @Override
-    public Flux<ImageSrcModel> getImageSrcForFolder(final String folderId) {
+    public Flux<ImageSrc> getImageSrcForFolder(final String folderId) {
         var queryConditional =
                 QueryConditional.keyEqualTo(Key.builder().partitionValue(folderId).build());
         return Flux.fromStream(imageSrcTable.index("folder_index")
@@ -52,8 +52,8 @@ class ImageDynamoDBAdapter implements ImageDBAdapter {
     }
 
     @Override
-    public Mono<ImageSrcModel> updateImageSrc(final ImageSrcModel imageSrc) {
-        var newImage = Mono.just(imageSrcTable.updateItem(UpdateItemEnhancedRequest.builder(ImageSrcModel.class)
+    public Mono<ImageSrc> updateImageSrc(final ImageSrc imageSrc) {
+        var newImage = Mono.just(imageSrcTable.updateItem(UpdateItemEnhancedRequest.builder(ImageSrc.class)
                                                                   .item(imageSrc)
                                                                   .ignoreNulls(true)
                                                                   .build())).cache();
@@ -63,15 +63,15 @@ class ImageDynamoDBAdapter implements ImageDBAdapter {
     }
 
     @Override
-    public Mono<ImageSrcModel> addImageSrc(final ImageSrcModel imageSrc) {
-        return Mono.justOrEmpty(imageSrcTable.putItemWithResponse(PutItemEnhancedRequest.builder(ImageSrcModel.class)
+    public Mono<ImageSrc> addImageSrc(final ImageSrc imageSrc) {
+        return Mono.justOrEmpty(imageSrcTable.putItemWithResponse(PutItemEnhancedRequest.builder(ImageSrc.class)
                                                                           .item(imageSrc)
                                                                           .build()).attributes())
                 .switchIfEmpty(getImageSrc(imageSrc.getId()));
     }
 
     @Override
-    public Mono<ImageSrcModel> deleteImage(final ImageSrcModel imageSrc) {
+    public Mono<ImageSrc> deleteImage(final ImageSrc imageSrc) {
         return imageRedisTemplate.opsForHash()
                 .delete(imageSrc.getId())
                 .thenReturn(imageSrc)
