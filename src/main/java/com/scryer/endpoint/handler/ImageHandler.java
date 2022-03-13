@@ -66,15 +66,20 @@ public class ImageHandler {
                 .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
                         .map(buffer -> new String(buffer.asByteBuffer().array())));
 
+        var lastModifiedMono = multivalueMono.map(map -> map.get("lastModified").content())
+                .flatMap(bufferFlux -> DataBufferUtils.join(bufferFlux)
+                        .map(buffer -> new String(buffer.asByteBuffer().array()))).map(Long::parseLong);
+
         var fullImageMono = multivalueMono.map(map -> map.get("image").content()).flatMap(
                 bufferFlux -> DataBufferUtils.join(bufferFlux).map(buffer -> buffer.asByteBuffer().array()));
 
-        return Mono.zip(nameStringMono, typeStringMono, folderIdMono, fullImageMono)
-                .flatMap(t4 -> {
-                    var name = t4.getT1();
-                    var type = t4.getT2();
-                    var folderId = t4.getT3();
-                    var image = t4.getT4();
+        return Mono.zip(nameStringMono, typeStringMono, folderIdMono, fullImageMono, lastModifiedMono)
+                .flatMap(t5 -> {
+                    var name = t5.getT1();
+                    var type = t5.getT2();
+                    var folderId = t5.getT3();
+                    var image = t5.getT4();
+                    var lastModified = t5.getT5();
                     var thumbnailMono = imageResizeService
                             .getResizedImage(new ImageResizeRequest(image, type, 300));
                     var mediumMono = imageResizeService
@@ -105,19 +110,16 @@ public class ImageHandler {
                                     mediumLocation,
                                     fullImageLocation)
                             .flatMap(t4_2 -> {
-                                var currentTime = System.currentTimeMillis();
                                 return imageService
-                                        .addImageSrc(ImageSrc
-                                                             .builder()
+                                        .addImageSrc(ImageSrc.builder()
                                                              .id(t4_2.getT1())
                                                              .userId(userId)
                                                              .type(type[0])
                                                              .name(name)
                                                              .size("thumbnail")
-                                                             .source(new ImageBaseIdentifier("url",
-                                                                                             t4_2.getT2()))
-                                                             .createDate(currentTime)
-                                                             .lastModified(currentTime)
+                                                             .source(new ImageBaseIdentifier("url", t4_2.getT2()))
+                                                             .createDate(lastModified)
+                                                             .lastModified(lastModified)
                                                              .parentFolderId(folderId)
                                                              .alternateSizes(
                                                                      Map.of("medium",
@@ -154,10 +156,14 @@ public class ImageHandler {
         var images = serverRequest.bodyToFlux(ImageSrc.class)
                 .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
                 .cache();
-        var deletedImages = images.flatMap(imageService::deleteImage).cache();
+        var deletedImages = images.flatMap(image -> imageUploadService.deleteImage(image.getSource().src())
+                .thenReturn(image)
+                .flatMapIterable(i -> i.getAlternateSizes().entrySet())
+                .map(entry -> imageUploadService.deleteImage(entry.getValue().src()))
+                .then(imageService.deleteImage(image)));
         return deletedImages.collectList()
-                .flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                        .body(BodyInserters.fromValue(image)))
+                .flatMap(imageList -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(imageList)))
                 .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
     }
 
@@ -166,10 +172,10 @@ public class ImageHandler {
         return serverRequest.bodyToMono(ImageSrc.class)
                 .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
                 .flatMap(image -> imageUploadService.deleteImage(image.getSource().src())
-                            .thenReturn(image)
-                            .flatMapIterable(i -> i.getAlternateSizes().entrySet())
-                            .map(entry -> imageUploadService.deleteImage(entry.getValue().src()))
-                            .then(imageService.deleteImage(image)))
+                        .thenReturn(image)
+                        .flatMapIterable(i -> i.getAlternateSizes().entrySet())
+                        .map(entry -> imageUploadService.deleteImage(entry.getValue().src()))
+                        .then(imageService.deleteImage(image)))
                 .flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(image)))
                 .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
