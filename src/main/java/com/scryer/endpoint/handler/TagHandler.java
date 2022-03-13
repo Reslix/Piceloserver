@@ -46,7 +46,7 @@ public class TagHandler {
     public Mono<ServerResponse> updateImageSrcTags(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest).id();
         var requestMono = serverRequest.bodyToMono(UpdateImageSrcTagsRequest.class).cache();
-        var imageIdsMono = requestMono.map(UpdateImageSrcTagsRequest::imageIds);
+        var imageIdsMono = requestMono.map(UpdateImageSrcTagsRequest::imageIds).cache();
         var tagsMono = requestMono.map(UpdateImageSrcTagsRequest::tags);
         var existingTagsFlux = tagsMono.flatMapIterable(list -> list)
                 .flatMap(tag -> tagService.getTag(tag, userId));
@@ -67,6 +67,30 @@ public class TagHandler {
     record UpdateImageSrcTagsRequest(List<String> imageIds, List<String> tags) {
     }
 
+    public Mono<ServerResponse> updateImageRankingTags(final ServerRequest serverRequest) {
+        var userId = jwtManager.getUserIdentity(serverRequest).id();
+        var requestMono = serverRequest.bodyToMono(UpdateImageRankingTagsRequest.class).cache();
+        var imageRankingMono = requestMono.map(UpdateImageRankingTagsRequest::imageRankingId).map(List::of).cache();
+        var tagsMono = requestMono.map(UpdateImageRankingTagsRequest::tags);
+        var existingTagsFlux = tagsMono.flatMapIterable(list -> list)
+                .flatMap(tag -> tagService.getTag(tag, userId));
+        var newTagsFlux = tagsMono.flatMapIterable(list -> list)
+                .filterWhen(tag -> tagService.getTag(tag, userId)
+                        .map(t -> false)
+                        .defaultIfEmpty(true))
+                .flatMap(tag -> tagService.addNewTag(tag, userId));
+        var tagsFlux = Flux.concat(existingTagsFlux, newTagsFlux);
+        var updatedTagsMono = Flux.zip(tagsFlux, imageRankingMono.repeat(), tagService::updateTagImageRankingIds)
+                .flatMap(i -> i)
+                .collectList();
+
+        return updatedTagsMono.flatMap(tags -> ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(tags)));
+    }
+
+    record UpdateImageRankingTagsRequest(String imageRankingId, List<String> tags) {
+    }
+
     public Mono<ServerResponse> deleteImageSrcTags(final ServerRequest serverRequest) {
         var userId = jwtManager.getUserIdentity(serverRequest).id();
         var requestMono = serverRequest.bodyToMono(DeleteTagImageSrcsRequest.class).cache();
@@ -83,6 +107,24 @@ public class TagHandler {
     }
 
     record DeleteTagImageSrcsRequest(List<String> imageIds, List<String> tags) {
+    }
+
+    public Mono<ServerResponse> deleteImageRankingTags(final ServerRequest serverRequest) {
+        var userId = jwtManager.getUserIdentity(serverRequest).id();
+        var requestMono = serverRequest.bodyToMono(DeleteTagImageRankingRequest.class).cache();
+        var tagNamesMono = requestMono.map(DeleteTagImageRankingRequest::tags);
+        var imageRankingMono = requestMono.map(DeleteTagImageRankingRequest::imageRankingId).map(List::of).cache();
+        var tagsFlux = tagNamesMono.flatMapIterable(tags-> tags).flatMap(tag -> tagService.getTag(tag, userId)).cache();
+        var deletedTagsMono = Flux.zip(tagsFlux, imageRankingMono.repeat(), tagService::deleteTagImages)
+                .flatMap(tag -> tag)
+                .filter(tag -> tag.getImageRankingIds().size() == 0 && tag.getImageIds().size() == 0)
+                .collectList();
+
+        return deletedTagsMono.flatMap(tags -> ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(tags)));
+    }
+
+    record DeleteTagImageRankingRequest(String imageRankingId, List<String> tags) {
     }
 
 }

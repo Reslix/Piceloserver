@@ -166,14 +166,13 @@ public class ImageHandler {
         var userId = jwtManager.getUserIdentity(serverRequest).id();
         return serverRequest.bodyToMono(ImageSrcModel.class)
                 .filter(imageSrcModel -> imageSrcModel.getUserId().equals(userId))
-                .flatMap(image -> {
-                    imageUploadService.deleteImage(image.getSource().src());
-                    image.getAlternateSizes().forEach((key, value) -> imageUploadService.deleteImage(value.src()));
-                    return imageService.deleteImage(image);
-                })
+                .flatMap(image -> imageUploadService.deleteImage(image.getSource().src())
+                            .thenReturn(image)
+                            .flatMapIterable(i -> i.getAlternateSizes().entrySet())
+                            .map(entry -> imageUploadService.deleteImage(entry.getValue().src()))
+                            .then(imageService.deleteImage(image)))
                 .flatMap(image -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(image)))
                 .switchIfEmpty(ServerResponse.status(HttpStatus.BAD_REQUEST).build());
     }
-
 }
