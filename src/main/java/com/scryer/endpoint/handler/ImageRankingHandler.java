@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.awt.*;
 import java.util.List;
 
 @Service
@@ -139,4 +140,22 @@ public class ImageRankingHandler {
                         .body(BodyInserters.fromValue(imageRanking)));
     }
 
+    public Mono<ServerResponse> uploadRankingState(final ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(UploadRankingStateRequest.class)
+                .flatMap(request -> imageRankingService.uploadRankingState(request.imageRanking(), request.state()))
+                .flatMap(response -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(response)));
+    }
+
+    record UploadRankingStateRequest(ImageRanking imageRanking, String state) {
+
+    }
+
+    public Mono<ServerResponse> deleteRankingState(final ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(ImageRanking.class).flatMap(imageRankingService::deleteRankingState)
+                .flatMap(response -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(response)));
+    }
 }

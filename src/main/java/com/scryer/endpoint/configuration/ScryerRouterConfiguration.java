@@ -32,6 +32,8 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var postRankingStepsPredicate = RequestPredicates.POST("/api/imageranking/step/")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+        var postImageRankingStatePredicate = RequestPredicates.POST("/api/imageranking/state/")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var getUserImageRankingsPredicate = RequestPredicates.GET("/api/imageranking/user/{userId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var getRankingStepsPredicate = RequestPredicates.GET("/api/imageranking/step/{imageRankingId}")
@@ -42,15 +44,20 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var deleteImageRankingPredicate = RequestPredicates.DELETE("/api/imageranking/")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
-
+        var deleteImageRankingStatePredicate = RequestPredicates.DELETE("/api/imageranking/state/")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         return RouterFunctions.route(postImageRankingPredicate, imageRankingHandler::createImageRanking)
                 .andRoute(postRankingStepsPredicate, imageRankingHandler::createRankingsSteps)
+                .andRoute(postImageRankingStatePredicate, imageRankingHandler::uploadRankingState)
                 .andRoute(getUserImageRankingsPredicate, imageRankingHandler::getUserImageRankings)
                 .andRoute(getRankingStepsPredicate, imageRankingHandler::getRankingSteps)
                 .andRoute(updateImageRankingRankingStepPredicate, imageRankingHandler::updateImageRankingRankingStep)
                 .andRoute(updateImageRankingImagesPredicate, imageRankingHandler::updateImageRankingImages)
-                .andRoute(deleteImageRankingPredicate, imageRankingHandler::deleteImageRanking).filter(routeMetricsFilter);
+                .andRoute(deleteImageRankingPredicate, imageRankingHandler::deleteImageRanking)
+                .andRoute(deleteImageRankingStatePredicate, imageRankingHandler::deleteRankingState)
+                .filter(routeMetricsFilter);
     }
+
     @Bean
     public RouterFunction<ServerResponse> imageRoute(final ImageHandler imageHandler) {
         var postImagePredicate = RequestPredicates.POST("/api/image")
@@ -111,7 +118,8 @@ public class ScryerRouterConfiguration {
                 .andRoute(updateImageSrcTagsPredicate, tagHandler::updateImageSrcTags)
                 .andRoute(updateImageRankingTagsPredicate, tagHandler::updateImageRankingTags)
                 .andRoute(deleteImageSrcTagsPredicate, tagHandler::deleteImageSrcTags)
-                .andRoute(deleteImageRankingTagsPredicate, tagHandler::deleteImageRankingTags).filter(routeMetricsFilter);
+                .andRoute(deleteImageRankingTagsPredicate, tagHandler::deleteImageRankingTags)
+                .filter(routeMetricsFilter);
     }
 
     @Bean

@@ -12,11 +12,11 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 @Service
-class ImageRankingDynamoDbAdapter implements ImageRankingDBAdapter {
+class ImageRankingDynamoDBAdapter implements ImageRankingDBAdapter {
 
     private final DynamoDbTable<ImageRanking> imageRankingTable;
 
-    ImageRankingDynamoDbAdapter(final DynamoDbTable<ImageRanking> imageRankingTable) {
+    ImageRankingDynamoDBAdapter(final DynamoDbTable<ImageRanking> imageRankingTable) {
         this.imageRankingTable = imageRankingTable;
     }
 

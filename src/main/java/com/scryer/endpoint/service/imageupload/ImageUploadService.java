@@ -13,29 +13,28 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class ImageUploadService {
 
     private final S3Client s3Client;
-
-    private final String s3BucketName;
+    private final String s3ImageBucketName;
 
     @Autowired
-    public ImageUploadService(final S3Client s3Client, final String s3BucketName) {
+    public ImageUploadService(final S3Client s3Client, final String s3ImageBucketName) {
         this.s3Client = s3Client;
-        this.s3BucketName = s3BucketName;
+        this.s3ImageBucketName = s3ImageBucketName;
     }
 
     public Mono<String> uploadImage(final ImageUploadRequest request) {
         var key = request.size() + "/" + request.id() + "." + request.type()[2];
-        var s3Request = PutObjectRequest.builder().bucket(s3BucketName).key(key).contentType(request.type()[0]).build();
+        var s3Request = PutObjectRequest.builder().bucket(s3ImageBucketName).key(key).contentType(request.type()[0]).build();
         var body = RequestBody.fromBytes(request.image());
 
         return Mono.justOrEmpty(s3Client.putObject(s3Request, body))
-                .then(Mono.just(GetUrlRequest.builder().bucket(s3BucketName).key(key).build()))
+                .then(Mono.just(GetUrlRequest.builder().bucket(s3ImageBucketName).key(key).build()))
                 .map(urlRequest -> s3Client.utilities().getUrl(urlRequest).toExternalForm());
     }
 
     public Mono<String> deleteImage(final String path) {
         var splitPath = path.split("/");
         var key = splitPath[splitPath.length - 2] + "/" + splitPath[splitPath.length - 1];
-        return Mono.just(s3Client.deleteObject(DeleteObjectRequest.builder().bucket(s3BucketName).key(key).build())
+        return Mono.just(s3Client.deleteObject(DeleteObjectRequest.builder().bucket(s3ImageBucketName).key(key).build())
                                  .toString());
     }
 

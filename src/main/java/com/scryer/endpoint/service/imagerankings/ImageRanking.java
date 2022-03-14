@@ -29,6 +29,8 @@ public final class ImageRanking implements DynamoDBTableModel, HasId {
 
 	private final List<String> imageIds;
 
+	private final String stateUrl;
+
 	@DynamoDbPartitionKey
 	public String getId() {
 		return this.id;
