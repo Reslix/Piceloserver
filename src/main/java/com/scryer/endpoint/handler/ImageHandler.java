@@ -93,18 +93,19 @@ public class ImageHandler {
                     var uniqueIdMono = imageService.getUniqueId().cache();
                     var thumbnailLocation = Mono.zip(uniqueIdMono, thumbnailMono)
                             .flatMap(t2 -> imageUploadService
-                                    .uploadImage(new ImageUploadRequest(t2.getT1(), "thumbnail", t2.getT2(), type)))
+                                    .uploadImage(new ImageUploadRequest(userId, t2.getT1(), "thumbnail", t2.getT2(), type)))
                             .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
                                     .map(imageService::deleteImage));
 
                     var mediumLocation = Mono.zip(uniqueIdMono, mediumMono)
                             .flatMap(t2 -> imageUploadService
-                                    .uploadImage(new ImageUploadRequest(t2.getT1(), "medium", t2.getT2(), type)))
+                                    .uploadImage(new ImageUploadRequest(userId, t2.getT1(), "medium", t2.getT2(), type)))
                             .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
                                     .map(imageService::deleteImage));
 
                     var fullImageLocation = uniqueIdMono
-                            .flatMap(id -> imageUploadService.uploadImage(new ImageUploadRequest(id,
+                            .flatMap(id -> imageUploadService.uploadImage(new ImageUploadRequest(userId,
+                                                                                                 id,
                                                                                                  "full",
                                                                                                  image,
                                                                                                  type)))

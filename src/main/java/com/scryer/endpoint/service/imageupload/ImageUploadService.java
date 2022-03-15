@@ -22,8 +22,12 @@ public class ImageUploadService {
     }
 
     public Mono<String> uploadImage(final ImageUploadRequest request) {
-        var key = request.size() + "/" + request.id() + "." + request.type()[2];
-        var s3Request = PutObjectRequest.builder().bucket(s3ImageBucketName).key(key).contentType(request.type()[0]).build();
+        var key = request.userId() + "/" + request.size() + "/" + request.id() + "." + request.type()[2];
+        var s3Request = PutObjectRequest.builder()
+                .bucket(s3ImageBucketName)
+                .key(key)
+                .contentType(request.type()[0])
+                .build();
         var body = RequestBody.fromBytes(request.image());
 
         return Mono.justOrEmpty(s3Client.putObject(s3Request, body))
@@ -33,7 +37,11 @@ public class ImageUploadService {
 
     public Mono<String> deleteImage(final String path) {
         var splitPath = path.split("/");
-        var key = splitPath[splitPath.length - 2] + "/" + splitPath[splitPath.length - 1];
+        var key = splitPath[splitPath.length - 3] +
+                  "/" +
+                  splitPath[splitPath.length - 2] +
+                  "/" +
+                  splitPath[splitPath.length - 1];
         return Mono.just(s3Client.deleteObject(DeleteObjectRequest.builder().bucket(s3ImageBucketName).key(key).build())
                                  .toString());
     }
