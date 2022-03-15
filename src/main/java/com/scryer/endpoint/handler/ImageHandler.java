@@ -103,19 +103,19 @@ public class ImageHandler {
                             .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
                                     .map(imageService::deleteImage));
 
-                    var fullImageLocation = uniqueIdMono
-                            .flatMap(id -> imageUploadService.uploadImage(new ImageUploadRequest(userId,
-                                                                                                 id,
-                                                                                                 "full",
-                                                                                                 image,
-                                                                                                 type)))
-                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
-                                    .map(imageService::deleteImage));
+//                    var fullImageLocation = uniqueIdMono
+//                            .flatMap(id -> imageUploadService.uploadImage(new ImageUploadRequest(userId,
+//                                                                                                 id,
+//                                                                                                 "full",
+//                                                                                                 image,
+//                                                                                                 type)))
+//                            .doOnError(error -> uniqueIdMono.map(id -> ImageSrc.builder().id(id).build())
+//                                    .map(imageService::deleteImage));
 
                     return Mono.zip(uniqueIdMono,
                                     thumbnailLocation,
-                                    mediumLocation,
-                                    fullImageLocation)
+                                    mediumLocation)//,
+//                                    fullImageLocation)
                             .flatMap(t4_2 -> {
                                 return imageService
                                         .addImageSrc(ImageSrc.builder()
@@ -134,7 +134,7 @@ public class ImageHandler {
                                                                                                     t4_2.getT3()),
                                                                             "full",
                                                                             new ImageBaseIdentifier("url",
-                                                                                                    t4_2.getT4())))
+                                                                                                    t4_2.getT3())))
                                                              .build());
                             });
                 })
