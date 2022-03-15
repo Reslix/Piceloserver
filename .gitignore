@@ -9,6 +9,8 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+**/src/test/resources/dynamodb/**
+**/src/test/resources/minio/**
 *.env
 *.crt
 *.p12
