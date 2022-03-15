@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.picelo.endpoint.EndpointApplication;
-import com.picelo.endpoint.configuration.ScryerTestConfiguration;
+import com.picelo.endpoint.configuration.PiceloTestConfiguration;
 import com.picelo.endpoint.security.HandlerTestSecurityConfig;
 import com.picelo.endpoint.security.JWTManager;
 import com.picelo.endpoint.service.tag.TagService;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 /**
  * Integration test because unit tests will destroy my tendons
  */
-@SpringBootTest(classes = {EndpointApplication.class, HandlerTestSecurityConfig.class, ScryerTestConfiguration.class},
+@SpringBootTest(classes = {EndpointApplication.class, HandlerTestSecurityConfig.class, PiceloTestConfiguration.class},
                 webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
                 properties = {"spring.main.allow-bean-definition-overriding=true"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

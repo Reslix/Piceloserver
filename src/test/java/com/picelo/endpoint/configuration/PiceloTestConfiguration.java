@@ -10,7 +10,7 @@ import java.net.URI;
 import java.time.Duration;
 
 @TestConfiguration
-public class ScryerTestConfiguration {
+public class PiceloTestConfiguration {
 
 	@Bean
 	public DockerComposeContainer container() {

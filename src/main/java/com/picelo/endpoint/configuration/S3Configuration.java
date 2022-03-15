@@ -20,12 +20,12 @@ public class S3Configuration {
 
     @Bean
     public String s3ImageBucketName() {
-        return "scryerimagerepo";
+        return "piceloimagerepo";
     }
 
     @Bean
     public String s3RankingBucketName() {
-        return "scryerrankingrepo";
+        return "picelorankingrepo";
     }
 
     @Bean

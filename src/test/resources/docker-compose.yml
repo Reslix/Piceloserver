@@ -24,7 +24,7 @@ services:
     environment:
       MINIO_ROOT_USER: fakestaws
       MINIO_ROOT_PASSWORD: fakestaws
-    command: "server ./scryer --console-address :9001"
+    command: "server ./picelo --console-address :9001"
 
   mc:
     image: minio/mc
@@ -32,7 +32,7 @@ services:
       - s3
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set scryer http://s3:9000 fakestaws fakestaws;
-      /usr/bin/mc mb scryer/scryerimagerepo;
-      /usr/bin/mc policy set public scryer/scryerimagerepo;"
+      /usr/bin/mc alias set picelo http://s3:9000 fakestaws fakestaws;
+      /usr/bin/mc mb picelo/piceloimagerepo;
+      /usr/bin/mc policy set public picelo/piceloimagerepo;"
 
