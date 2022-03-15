@@ -64,6 +64,8 @@ public class ScryerRouterConfiguration {
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var getImagesByFolderPredicate = RequestPredicates.GET("/api/images/folder/{folderId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
+        var getImagesByIdsPredicate = RequestPredicates.GET("/api/images/{imageIds}")
+                .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var moveImagesPredicate = RequestPredicates.PUT("/api/images/folder/{folderId}")
                 .and(RequestPredicates.accept(MediaType.APPLICATION_JSON));
         var deleteImagePredicate = RequestPredicates.DELETE("/api/image")
@@ -73,6 +75,7 @@ public class ScryerRouterConfiguration {
 
         return RouterFunctions.route(postImagePredicate, imageHandler::postImage)
                 .andRoute(getImagesByFolderPredicate, imageHandler::getImagesByFolder)
+                .andRoute(getImagesByIdsPredicate, imageHandler::getImagesByIds)
                 .andRoute(moveImagesPredicate, imageHandler::moveImages)
                 .andRoute(deleteImagePredicate, imageHandler::deleteImage)
                 .andRoute(deleteImagesPredicate, imageHandler::deleteImages).filter(routeMetricsFilter);

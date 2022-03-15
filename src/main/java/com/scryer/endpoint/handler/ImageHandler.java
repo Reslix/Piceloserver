@@ -18,6 +18,9 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -39,12 +42,15 @@ public class ImageHandler {
         this.jwtManager = jwtManager;
     }
 
-    // Get imagesrc by folder
-    // Upload imageIds
-    // Delete images
     public Mono<ServerResponse> getImagesByFolder(final ServerRequest serverRequest) {
         String folderId = serverRequest.pathVariable("folderId");
         return imageService.getImageSrcForFolder(folderId).collectList().flatMap(imageSrcs -> ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(imageSrcs)));
+    }
+
+    public Mono<ServerResponse> getImagesByIds(final ServerRequest serverRequest) {
+        var imageIds = Arrays.stream(serverRequest.pathVariable("imageIds").split(",")).toList();
+        return imageService.getImageSrcs(imageIds).collectList().flatMap(imageSrcs -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(imageSrcs)));
     }
 
